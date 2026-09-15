@@ -6,6 +6,17 @@ import { DeviceDetails } from './components/devices/DeviceDetails.jsx';
 import { useDevices } from './hooks/useDevices.js';
 import { api } from './api/client.js';
 
+function GraphIcon() {
+  return (
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <circle cx="12" cy="6" r="2.5" />
+      <circle cx="5" cy="18" r="2.5" />
+      <circle cx="19" cy="18" r="2.5" />
+      <path d="M12 8.5V13M12 13L6.8 16.3M12 13l5.2 3.3" />
+    </svg>
+  );
+}
+
 export function App() {
   const { devices, loading, error } = useDevices();
   const [search, setSearch] = useState('');
@@ -45,19 +56,45 @@ export function App() {
       />
       <div className="ns-main">
         <Sidebar summary={summary} />
-        {loading ? (
-          <p style={{ padding: 16 }}>Loading devices…</p>
-        ) : error ? (
-          <p style={{ padding: 16 }}>Could not reach backend: {error}</p>
-        ) : (
-          <NetworkGraph devices={filtered} onSelectDevice={setSelectedId} />
+
+        <div className="ns-graph-pane">
+          {loading ? (
+            <div className="ns-graph-status">
+              <div className="ns-spinner" />
+            </div>
+          ) : error ? (
+            <div className="ns-graph-empty">
+              <GraphIcon />
+              <div className="ns-graph-empty__title">Could not reach the backend</div>
+              <div className="ns-graph-empty__hint">{error}</div>
+            </div>
+          ) : devices.length === 0 ? (
+            <div className="ns-graph-empty">
+              <GraphIcon />
+              <div className="ns-graph-empty__title">No devices yet</div>
+              <div className="ns-graph-empty__hint">
+                Run the discovery agent, or populate demo data from the backend with <code>npm run seed</code>.
+              </div>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="ns-graph-empty">
+              <GraphIcon />
+              <div className="ns-graph-empty__title">No devices match your filters</div>
+              <div className="ns-graph-empty__hint">Try clearing the search or filters above.</div>
+            </div>
+          ) : (
+            <NetworkGraph devices={filtered} onSelectDevice={setSelectedId} />
+          )}
+        </div>
+
+        {selectedDevice && (
+          <DeviceDetails
+            key={selectedDevice.id}
+            device={selectedDevice}
+            onClose={() => setSelectedId(null)}
+            onUpdated={() => {}}
+          />
         )}
-        <DeviceDetails
-          key={selectedDevice?.id ?? 'none'}
-          device={selectedDevice}
-          onClose={() => setSelectedId(null)}
-          onUpdated={() => {}}
-        />
       </div>
     </div>
   );

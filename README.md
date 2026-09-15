@@ -49,27 +49,59 @@ Full write-ups: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (data flow, compone
 
 ## Quickstart
 
-Requires Node.js ≥ 18 and Python ≥ 3.10.
+Requires Node.js ≥ 18 and Python ≥ 3.10. Run each numbered step in its own terminal tab.
+
+### macOS / Linux
 
 ```bash
 # 1. Backend
 cd backend && cp .env.example .env && npm install && npm run dev
+```
 
+```bash
 # 2. Frontend (new terminal)
 cd frontend && cp .env.example .env && npm install && npm run dev
-
-# 3. Discovery agent (new terminal) — NETATLAS_API_KEY must match backend's AGENT_API_KEY
-cd agent && python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-NETATLAS_API_KEY=change-me-to-a-random-secret python -m netatlas_agent.main
 ```
+
+```bash
+# 3. Discovery agent (new terminal) — NETATLAS_API_KEY must match backend's AGENT_API_KEY
+cd agent
+python3 -m venv .venv && source .venv/bin/activate
+pip3 install -r requirements.txt
+NETATLAS_API_KEY=change-me-to-a-random-secret python3 -m netatlas_agent.main
+```
+
+### Windows (PowerShell)
+
+```powershell
+# 1. Backend
+cd backend; Copy-Item .env.example .env; npm install; npm run dev
+```
+
+```powershell
+# 2. Frontend (new terminal)
+cd frontend; Copy-Item .env.example .env; npm install; npm run dev
+```
+
+```powershell
+# 3. Discovery agent (new terminal, run as Administrator for full ARP access) —
+# NETATLAS_API_KEY must match backend's AGENT_API_KEY
+cd agent
+python -m venv .venv; .venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+$env:NETATLAS_API_KEY = "change-me-to-a-random-secret"
+python -m netatlas_agent.main
+```
+
+> On Windows, if `.venv\Scripts\Activate.ps1` is blocked, run PowerShell as Administrator once and execute `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, then retry.
 
 Open `http://localhost:5173` — devices discovered by the agent appear on the graph as they're reported, live.
 
 ### No agent handy? Seed some demo data
 
 ```bash
-cd backend && npm run seed
+cd backend
+npm run seed
 ```
 
 Populates the database with ~10 plausible fake devices (router, laptop, phones, TV, IoT, one offline) so the dashboard has something to show immediately.
@@ -85,7 +117,8 @@ Builds and starts the backend (pre-seeded with the same mock data) and the front
 ## Tests
 
 ```bash
-cd backend && npm test
+cd backend
+npm test
 ```
 
 Backend unit tests run on Node's built-in test runner against an isolated in-memory database — see [backend/README.md](backend/README.md#tests).

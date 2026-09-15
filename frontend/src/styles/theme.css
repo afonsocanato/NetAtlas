@@ -1,28 +1,62 @@
+:root {
+  --ns-radius-sm: 8px;
+  --ns-radius: 12px;
+  --ns-radius-lg: 18px;
+  --ns-font: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --ns-router: #f59e0b;
+  --ns-computer: #38bdf8;
+  --ns-phone: #a78bfa;
+  --ns-tv: #f472b6;
+  --ns-iot: #34d399;
+  --ns-unknown: #94a3b8;
+  --ns-online: #22c55e;
+  --ns-offline: #f87171;
+}
+
 :root[data-theme='dark'] {
-  --ns-bg: #0f172a;
-  --ns-panel: #1e293b;
-  --ns-text: #e2e8f0;
-  --ns-muted: #94a3b8;
-  --ns-edge: #334155;
-  --ns-border: #334155;
+  --ns-bg: #0a0d14;
+  --ns-panel: #12151f;
+  --ns-panel-2: #171b28;
+  --ns-text: #e7e9ee;
+  --ns-muted: #8b93a7;
+  --ns-border: rgba(255, 255, 255, 0.08);
+  --ns-border-strong: rgba(255, 255, 255, 0.14);
+  --ns-accent: #6d6ef5;
+  --ns-accent-soft: rgba(109, 110, 245, 0.16);
+  --ns-accent-text: #ffffff;
+  --ns-edge: rgba(255, 255, 255, 0.14);
+  --ns-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 28px -12px rgba(0, 0, 0, 0.6);
+  --ns-graph-bg: radial-gradient(circle at 30% 20%, #161a26 0%, #0a0d14 65%);
 }
 
 :root[data-theme='light'] {
-  --ns-bg: #f8fafc;
+  --ns-bg: #f3f4f7;
   --ns-panel: #ffffff;
-  --ns-text: #0f172a;
-  --ns-muted: #475569;
-  --ns-edge: #cbd5e1;
-  --ns-border: #e2e8f0;
+  --ns-panel-2: #f8f9fb;
+  --ns-text: #12141c;
+  --ns-muted: #6b7280;
+  --ns-border: rgba(15, 23, 42, 0.08);
+  --ns-border-strong: rgba(15, 23, 42, 0.14);
+  --ns-accent: #5457e6;
+  --ns-accent-soft: rgba(84, 87, 230, 0.1);
+  --ns-accent-text: #ffffff;
+  --ns-edge: rgba(15, 23, 42, 0.12);
+  --ns-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 24px -12px rgba(15, 23, 42, 0.16);
+  --ns-graph-bg: radial-gradient(circle at 30% 20%, #ffffff 0%, #f3f4f7 65%);
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
 body {
   margin: 0;
   background: var(--ns-bg);
   color: var(--ns-text);
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: var(--ns-font);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
 }
 
 .ns-app {
@@ -31,88 +65,434 @@ body {
   height: 100vh;
 }
 
+/* Topbar */
+
 .ns-topbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 12px;
-  padding: 12px 16px;
+  gap: 10px 16px;
+  padding: 12px 20px;
   border-bottom: 1px solid var(--ns-border);
   background: var(--ns-panel);
 }
 
-.ns-topbar h1 {
-  font-size: 18px;
-  margin: 0 12px 0 0;
+.ns-brand {
+  display: flex;
+  align-items: center;
+  margin-right: 8px;
+  /* The logo artwork has fixed dark-navy text baked in, so it needs a
+     light backing regardless of the app theme — transparent against the
+     dark panel would make half the wordmark unreadable. */
+  background: #ffffff;
+  border-radius: var(--ns-radius);
+  padding: 6px 14px;
+}
+
+.ns-brand__logo {
+  height: 40px;
+  width: auto;
+  display: block;
+}
+
+.ns-search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+}
+
+.ns-search-wrap svg {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ns-muted);
+  pointer-events: none;
 }
 
 .ns-search {
-  flex: 1;
-  min-width: 160px;
+  width: 100%;
+  padding: 8px 12px 8px 34px;
 }
+
+.ns-filters {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--ns-panel-2);
+  border: 1px solid var(--ns-border);
+  border-radius: var(--ns-radius);
+  padding: 3px;
+}
+
+.ns-filters select {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  padding: 6px 8px;
+}
+
+.ns-filters select:focus {
+  background: var(--ns-panel);
+}
+
+.ns-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 999px;
+}
+
+/* Form controls */
+
+input,
+select,
+button {
+  font-family: inherit;
+  background: var(--ns-panel-2);
+  color: var(--ns-text);
+  border: 1px solid var(--ns-border);
+  border-radius: var(--ns-radius-sm);
+  padding: 8px 10px;
+  font-size: 13px;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.1s ease;
+}
+
+input::placeholder {
+  color: var(--ns-muted);
+}
+
+input:hover,
+select:hover,
+button:hover {
+  border-color: var(--ns-border-strong);
+}
+
+input:focus,
+select:focus,
+button:focus-visible {
+  outline: none;
+  border-color: var(--ns-accent);
+  box-shadow: 0 0 0 3px var(--ns-accent-soft);
+}
+
+button {
+  cursor: pointer;
+  font-weight: 500;
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+button.ns-primary {
+  background: var(--ns-accent);
+  border-color: var(--ns-accent);
+  color: var(--ns-accent-text);
+}
+
+button.ns-primary:hover {
+  filter: brightness(1.08);
+}
+
+button.ns-primary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Layout */
 
 .ns-main {
   display: grid;
-  grid-template-columns: 220px 1fr auto;
+  grid-template-columns: 240px 1fr auto;
   min-height: 0;
 }
 
 .ns-sidebar {
-  padding: 16px;
+  padding: 20px 16px;
   border-right: 1px solid var(--ns-border);
   background: var(--ns-panel);
   overflow-y: auto;
 }
 
-.ns-stats {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 16px;
+.ns-sidebar h2 {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ns-muted);
+  margin: 0 0 12px;
 }
 
-.ns-stats li {
+.ns-stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.ns-stat-card {
+  background: var(--ns-panel-2);
+  border: 1px solid var(--ns-border);
+  border-radius: var(--ns-radius);
+  padding: 10px 12px;
+}
+
+.ns-stat-card--wide {
+  grid-column: 1 / -1;
   display: flex;
+  align-items: baseline;
   justify-content: space-between;
-  padding: 4px 0;
+}
+
+.ns-stat-card__value {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.ns-stat-card__label {
+  font-size: 11px;
   color: var(--ns-muted);
+  margin-top: 2px;
+}
+
+.ns-stat-card--online .ns-stat-card__value { color: var(--ns-online); }
+.ns-stat-card--offline .ns-stat-card__value { color: var(--ns-offline); }
+
+.ns-legend {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ns-legend li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--ns-radius-sm);
+  font-size: 13px;
   text-transform: capitalize;
+  color: var(--ns-text);
+}
+
+.ns-legend__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ns-legend__count {
+  margin-left: auto;
+  color: var(--ns-muted);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+}
+
+/* Graph */
+
+.ns-graph-pane {
+  position: relative;
+  min-width: 0;
 }
 
 .ns-graph {
   width: 100%;
   height: 100%;
+  background: var(--ns-graph-bg);
 }
 
+.ns-graph-empty,
+.ns-graph-status {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+  padding: 24px;
+  color: var(--ns-muted);
+  background: var(--ns-graph-bg);
+}
+
+.ns-graph-empty svg {
+  opacity: 0.5;
+}
+
+.ns-graph-empty__title {
+  color: var(--ns-text);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.ns-graph-empty__hint {
+  font-size: 13px;
+  max-width: 320px;
+  line-height: 1.5;
+}
+
+.ns-graph-empty code {
+  background: var(--ns-panel-2);
+  border: 1px solid var(--ns-border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 12px;
+}
+
+.ns-spinner {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--ns-border-strong);
+  border-top-color: var(--ns-accent);
+  animation: ns-spin 0.7s linear infinite;
+}
+
+@keyframes ns-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Device details panel */
+
 .ns-details {
-  width: 280px;
-  padding: 16px;
+  width: 300px;
+  padding: 20px;
   border-left: 1px solid var(--ns-border);
   background: var(--ns-panel);
   position: relative;
   overflow-y: auto;
+  animation: ns-slide-in 0.18s ease;
+}
+
+@keyframes ns-slide-in {
+  from { transform: translateX(12px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
 }
 
 .ns-details__close {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 14px;
+  right: 14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
+  border-color: transparent;
 }
 
-.ns-details dl {
-  display: grid;
-  grid-template-columns: 90px 1fr;
-  gap: 4px 8px;
+.ns-details__close:hover {
+  background: var(--ns-panel-2);
+  border-color: var(--ns-border);
+}
+
+.ns-details__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+  padding-right: 28px;
+}
+
+.ns-details__type-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ns-details h2 {
+  font-size: 16px;
+  margin: 0;
+  word-break: break-word;
+}
+
+.ns-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  margin: 10px 0 18px;
+}
+
+.ns-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.ns-badge--online {
+  color: var(--ns-online);
+  background: color-mix(in srgb, var(--ns-online) 15%, transparent);
+}
+
+.ns-badge--offline {
+  color: var(--ns-offline);
+  background: color-mix(in srgb, var(--ns-offline) 15%, transparent);
+}
+
+.ns-field-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0 0 20px;
+}
+
+.ns-field {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
   font-size: 13px;
 }
 
-.ns-details dt {
+.ns-field svg {
   color: var(--ns-muted);
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.ns-field__label {
+  color: var(--ns-muted);
+  min-width: 78px;
+  flex-shrink: 0;
+}
+
+.ns-field__value {
+  color: var(--ns-text);
+  word-break: break-word;
+}
+
+.ns-details form {
+  border-top: 1px solid var(--ns-border);
+  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .ns-details label {
   display: block;
-  margin-top: 12px;
-  font-size: 13px;
+  font-size: 12px;
+  font-weight: 600;
   color: var(--ns-muted);
 }
 
@@ -120,19 +500,43 @@ body {
 .ns-details select {
   display: block;
   width: 100%;
-  margin-top: 4px;
+  margin-top: 6px;
 }
 
-.ns-status--online { color: #22c55e; }
-.ns-status--offline { color: #ef4444; }
-
-input, select, button {
-  background: var(--ns-bg);
-  color: var(--ns-text);
-  border: 1px solid var(--ns-border);
-  border-radius: 6px;
-  padding: 6px 8px;
-  font-size: 13px;
+.ns-details button.ns-primary {
+  margin-top: 2px;
+  width: 100%;
 }
 
-button { cursor: pointer; }
+/* Responsive */
+
+@media (max-width: 860px) {
+  /* Switched from grid to a flex column here: a grid item with
+     overflow:auto sitting in an "auto"/minmax() row keeps collapsing to a
+     near-zero height by spec (its content stops contributing to that
+     track's size once overflow isn't visible). Flex sidesteps it — the
+     sidebar gets a fixed cap and the graph pane an explicit flex-basis. */
+  .ns-main {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ns-sidebar {
+    flex: none;
+    max-height: 38vh;
+    border-right: none;
+    border-bottom: 1px solid var(--ns-border);
+  }
+
+  .ns-graph-pane {
+    flex: 1 1 auto;
+    min-height: 240px;
+  }
+
+  .ns-details {
+    flex: none;
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid var(--ns-border);
+  }
+}

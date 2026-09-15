@@ -10,11 +10,11 @@ Local, cross-platform (Windows/Linux/macOS) Python agent that discovers devices 
 cd agent
 python3 -m venv .venv
 source .venv/bin/activate  # .venv\Scripts\activate on Windows
-pip install -r requirements.txt
+pip3 install -r requirements.txt   # just "pip" on Windows
 
 export NETATLAS_BACKEND_URL=http://localhost:4000
 export NETATLAS_API_KEY=change-me-to-a-random-secret   # must match backend's AGENT_API_KEY
-python -m netatlas_agent.main
+python3 -m netatlas_agent.main   # just "python" on Windows
 ```
 
 ## Configuration (env vars)
