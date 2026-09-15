@@ -30,7 +30,13 @@
 - ✅ Model layer (`deviceModel`, `settingsModel`) and everything downstream converted to async; `secrets.js` bootstrap now runs once at server startup via `initSecrets()`.
 - ✅ Tests point at the real configured Supabase project, isolated by a per-file fixture `network_id` and a `test_`-prefixed settings key namespace so a test run can never touch real data or credentials.
 
+## Phase 4.7 — Multi-network + BLE-assisted naming ✅
+- ✅ Multi-network support: one agent per physical network (`NETATLAS_NETWORK_ID`), backend auto-detects which network a dashboard visitor should see by matching their public IP against a recently-reporting network, with a manual override (`?networkId=`, surfaced as a topbar switcher once more than one network exists) — see [ARCHITECTURE.md#multi-network-model](ARCHITECTURE.md#multi-network-model).
+- ✅ Expanded device-type heuristics: `watch`, `speaker`, `console`, `camera` alongside the original set, guessed from hostname/vendor keywords.
+- ✅ Full IEEE OUI table bundled (`agent/netatlas_agent/oui_data/full_oui.json`, regenerated via `agent/scripts/update_oui.py`) instead of a tiny sample, for real vendor coverage.
+- ✅ Optional BLE scan (`agent/netatlas_agent/discovery/ble_scan.py`, subprocess-isolated) with conservative, vendor/RSSI-gated name matching (`ble_match.py`) — see [LIMITATIONS.md](LIMITATIONS.md) for why this is heuristic, never certain identification.
+
 ## Phase 5 — Extras (pick based on interest/time)
-- Presence history charts, new-device alerts (toast/webhook), multi-network support, JSON/CSV export, PWA install, optional safe service detection (allowlisted ports only), multi-user accounts, dashboard stats page.
+- Presence history charts, new-device alerts (toast/webhook), JSON/CSV export, PWA install, optional safe service detection (allowlisted ports only), multi-user accounts, dashboard stats page.
 
 Each phase should ship as its own set of commits/PRs so the git history itself demonstrates incremental, well-scoped work — good for portfolio review.

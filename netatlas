@@ -1,6 +1,9 @@
 #!/bin/bash
 # NetAtlas control script — run this from the project root:
 #   ./netatlas start | stop | status | help
+# Double-clicked from Finder (no arguments — Finder can't pass one), it
+# toggles instead: stops everything if any service is running, starts
+# everything if all are stopped.
 set -uo pipefail
 
 UID_NUM=$(id -u)
@@ -28,6 +31,15 @@ tutorial() {
 ============================================================
 
 EOF
+}
+
+any_running() {
+  local snapshot
+  snapshot=$(launchctl list 2>/dev/null)
+  for s in "${SERVICES[@]}"; do
+    echo "$snapshot" | grep -q "com\.netatlas\.$s" && return 0
+  done
+  return 1
 }
 
 status() {
@@ -84,10 +96,22 @@ stop_all() {
   echo "Não volta a ligar sozinho, nem depois de reiniciares o Mac."
 }
 
-case "${1:-help}" in
+toggle() {
+  if any_running; then
+    echo "Algo estava ligado — a desligar tudo (duplo-clique alterna)."
+    stop_all
+  else
+    echo "Estava tudo desligado — a ligar tudo (duplo-clique alterna)."
+    start_all
+  fi
+}
+
+case "${1:-}" in
   start) start_all ;;
   stop) stop_all ;;
   status) status ;;
+  help) ;;
+  "") toggle ;;
   *) ;;
 esac
 

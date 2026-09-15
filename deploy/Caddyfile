@@ -3,8 +3,9 @@
 # (from the repo root, or adjust the file_server root path below).
 #
 # Listens on plain HTTP on a local-only port — no certificate needed here,
-# since Cloudflare's edge terminates HTTPS for netatlas.yourdomain.com and
-# the tunnel forwards to this port over your machine's loopback interface.
+# since Cloudflare's edge terminates HTTPS for your public hostname (e.g.
+# netatlas.yourdomain.com) and the tunnel forwards to this port over your
+# machine's loopback interface.
 # Routes everything under one origin so the frontend can call /api and the
 # socket without CORS.
 

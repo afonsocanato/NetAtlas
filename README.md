@@ -17,15 +17,19 @@ Most home network tools either live inside a router's clunky admin UI or require
 - Passive ARP table reading, cross-platform (Windows `arp -a`, macOS `arp -a`, Linux `ip neigh`/`arp -a`)
 - Optional, rate-limited active ping sweep to warm the ARP cache for idle hosts (opt-in, off by default)
 - Best-effort hostname resolution (reverse DNS / mDNS)
-- Vendor identification from MAC OUI prefix, fully offline (local lookup table, no external API calls)
+- Vendor identification from MAC OUI prefix, fully offline (bundled full IEEE OUI table, no external API calls)
+- Device type guessed from hostname/vendor keywords — router, computer, phone, TV, IoT, watch, speaker, console, camera — always user-correctable
+- Optional BLE scan per cycle; heuristically matches a nearby BLE advertisement's name to a device when it can be done with confidence (see [docs/LIMITATIONS.md](docs/LIMITATIONS.md))
 - Periodic reporting loop, configurable interval
+- Run one agent per physical network you want tracked — see [docs/ARCHITECTURE.md#multi-network-model](docs/ARCHITECTURE.md#multi-network-model)
 
 **Backend**
 - REST API for devices, filters (status/vendor/type/search) and network summary stats
 - Supabase (Postgres) storage — schema managed via a single SQL file you run once in the Supabase SQL Editor
 - Upsert-by-MAC (falls back to IP when no MAC is available) so device history survives across scans
 - Online → offline transition only after N consecutive missed reports, to absorb transient Wi-Fi drops
-- Real-time push over Socket.IO (`device:new`, `device:updated`, `device:offline`, `scan:complete`)
+- Real-time push over Socket.IO (`device:new`, `device:updated`, `device:offline`, `scan:complete`), scoped per network
+- Multi-network aware: auto-detects which network a visitor should see by matching their public IP to a recently-reporting network, with a manual override
 - Login required by default (single admin account, JWT sessions) — zero-config: a random admin login and agent API key are generated on first boot if you don't set your own, so the dashboard is safe to put behind a real domain from day one (see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md))
 
 **Dashboard (frontend)**
@@ -34,7 +38,8 @@ Most home network tools either live inside a router's clunky admin UI or require
 - Editable custom label and device type per device, persisted to the backend
 - Live search by IP/hostname/MAC, plus status/type filters
 - Dark mode (persisted per-browser)
-- Live updates over WebSocket — no manual refresh needed
+- Live updates over WebSocket, plus a manual refresh button for an instant re-fetch
+- Network switcher in the topbar (appears once more than one network has reported) to view a network you're not currently on
 - Settings panel that surfaces the agent's backend URL + API key ready to copy, so pairing a new agent never means hand-editing two `.env` files to keep a secret in sync
 
 ## Architecture
@@ -59,8 +64,12 @@ Run each numbered step in its own terminal tab.
 ### macOS / Linux
 
 ```bash
-# 1. Backend — fill in SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env before `npm run dev`
-cd backend && cp .env.example .env && npm install && npm run dev
+# 1. Backend
+cd backend && cp .env.example .env && npm install
+```
+Now open `backend/.env` and fill in `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (from the Supabase step above) before continuing:
+```bash
+npm run dev
 ```
 
 ```bash
@@ -80,8 +89,12 @@ NETATLAS_API_KEY=<paste the key from step 1's log, or the Settings panel> python
 ### Windows (PowerShell)
 
 ```powershell
-# 1. Backend — fill in SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env before `npm run dev`
-cd backend; Copy-Item .env.example .env; npm install; npm run dev
+# 1. Backend
+cd backend; Copy-Item .env.example .env; npm install
+```
+Now open `backend/.env` and fill in `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (from the Supabase step above) before continuing:
+```powershell
+npm run dev
 ```
 
 ```powershell
@@ -140,28 +153,31 @@ Backend unit tests run on Node's built-in test runner **against your configured 
 ```
 NetAtlas/
 ├── agent/      # Python discovery agent — subnet detection, ARP reading, hostname/vendor resolution
+│   ├── scripts/update_oui.py  # regenerates oui_data/full_oui.json from IEEE's registry
 │   └── netatlas_agent/
-│       ├── discovery/   # network.py, arp_scan.py, icmp_scan.py, hostname.py, oui.py
+│       ├── discovery/   # network.py, arp_scan.py, icmp_scan.py, hostname.py, oui.py, classify.py, ble_scan.py, ble_match.py
+│       ├── oui_data/     # bundled MAC vendor lookup table
 │       ├── client.py    # reports batches to the backend
 │       └── main.py      # discovery loop entrypoint
 ├── backend/    # Node.js/Express API, Supabase (Postgres) storage, Socket.IO real-time layer
 │   ├── supabase/schema.sql  # run once in the Supabase SQL Editor — source of truth for the schema
 │   ├── src/
 │   │   ├── db/          # supabase client
-│   │   ├── models/       # device + settings queries (Supabase JS client)
+│   │   ├── models/       # device + network + settings queries (Supabase JS client)
 │   │   ├── services/     # ingestion + online/offline reconciliation
 │   │   ├── security/     # secrets.js — auto-generates agent key/JWT secret/admin login on first boot
-│   │   ├── controllers/, routes/, middleware/, sockets/
+│   │   ├── controllers/, routes/, middleware/, sockets/  # includes networkContext.js — multi-network resolution
 │   ├── test/             # node:test unit tests
 │   └── Dockerfile
 ├── frontend/   # React + Vite dashboard, Cytoscape.js graph
 │   ├── src/
-│   │   ├── components/graph/    # NetworkGraph.jsx
+│   │   ├── components/graph/    # NetworkGraph.jsx, deviceIcons.js
 │   │   ├── components/devices/  # DeviceDetails.jsx
-│   │   ├── components/layout/   # Topbar.jsx, Sidebar.jsx
+│   │   ├── components/layout/   # Topbar.jsx (search/filters/refresh/network switcher), Sidebar.jsx
 │   │   ├── components/auth/     # LoginPage.jsx
 │   │   ├── components/settings/ # SettingsModal.jsx (agent pairing info)
-│   │   ├── hooks/, api/, context/, auth/
+│   │   ├── constants/           # deviceTypes.js (colors/icons per type)
+│   │   ├── hooks/, api/, context/, auth/, utils/
 │   └── Dockerfile
 ├── docker-compose.yml  # one-command backend + frontend demo
 └── docs/       # architecture, API contract, DB schema, limitations, roadmap
@@ -175,7 +191,7 @@ Each component reads its own `.env` (copy the committed `.env.example`):
 |-----------|----------|
 | `backend` | `PORT`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `CORS_ORIGIN`, `OFFLINE_AFTER_MISSED_REPORTS`, `AGENT_API_KEY`\*, `ADMIN_USERNAME`\*, `ADMIN_PASSWORD`\*, `JWT_SECRET`\*, `NETATLAS_DISABLE_AUTH` |
 | `frontend` | `VITE_API_URL` |
-| `agent` | `NETATLAS_BACKEND_URL`, `NETATLAS_API_KEY`, `NETATLAS_SCAN_INTERVAL`, `NETATLAS_ACTIVE_PROBE`, `NETATLAS_RESOLVE_HOSTNAMES` |
+| `agent` | `NETATLAS_BACKEND_URL`, `NETATLAS_API_KEY`, `NETATLAS_NETWORK_ID`, `NETATLAS_SCAN_INTERVAL`, `NETATLAS_ACTIVE_PROBE`, `NETATLAS_RESOLVE_HOSTNAMES`, `NETATLAS_BLE_SCAN`, `NETATLAS_BLE_SCAN_SECONDS` |
 
 \* Optional — auto-generated on first boot if left unset (see [backend/README.md#login](backend/README.md#login)).
 
@@ -183,7 +199,7 @@ Full list with defaults in each component's own README ([backend](backend/README
 
 ## Status & roadmap
 
-Early-stage MVP — discovery, storage, real-time sync, the graph dashboard, login and a custom-domain deployment path are all working end-to-end, with backend tests, a mock-data seed script and Docker Compose in place. Not yet built: presence history, new-device alerts, multi-network support, export, and PWA. See [docs/ROADMAP.md](docs/ROADMAP.md) for the phased plan.
+Early-stage MVP — discovery, storage, real-time sync, the graph dashboard, login, multi-network support, BLE-assisted naming, and a custom-domain deployment path are all working end-to-end, with backend tests and Docker Compose in place. Not yet built: presence history, new-device alerts, export, and PWA. See [docs/ROADMAP.md](docs/ROADMAP.md) for the phased plan.
 
 ## License
 

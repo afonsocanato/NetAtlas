@@ -43,9 +43,40 @@ This separation means each piece can be rewritten independently (e.g. swap the a
 | Persistence & online/offline logic| Backend  |
 | Device type classification (manual/heuristic) | Backend |
 | User login (JWT) & agent pairing key | Backend |
-| Multi-network scoping (future)    | Backend |
+| Multi-network scoping             | Backend  |
 | Graph layout & rendering          | Frontend |
 | Search/filter UI state            | Frontend |
+
+## Multi-network model
+
+NetAtlas doesn't discover "whichever network the visitor is currently on" —
+it can't: a browser has no access to raw sockets/ARP for **any** network,
+including its own (see [LIMITATIONS.md](LIMITATIONS.md)). What it does
+instead:
+
+- Every device belongs to a `network_id` (default: `"default"`), set by
+  whichever agent reported it — run a **separate agent instance** (its own
+  `NETATLAS_NETWORK_ID`) inside each physical network you want tracked
+  (home, office, a relative's place, …). There is no way around running a
+  native agent inside a network to see its devices; a phone alone can never
+  do this (see below).
+- When a browser opens the dashboard, the backend picks which network to
+  show it via [`networkContext`](../backend/src/middleware/networkContext.js):
+  it matches the visitor's own public IP against whichever network an agent
+  most recently reported *from that same public IP* — i.e. "you're
+  currently on the same WiFi/NAT as this agent" — and falls back to
+  `"default"` if nothing matches. A `?networkId=` override (surfaced as the
+  network switcher in the topbar, [`Topbar.jsx`](../frontend/src/components/layout/Topbar.jsx))
+  lets you view a network you're not currently on, e.g. checking home from
+  mobile data.
+- **This means:** opening the dashboard from a network with no agent ever
+  shows *that* network's devices — there's nothing to show, because nothing
+  discovered them. It shows whatever network the auto-detect/override
+  resolves to instead (typically `"default"`). A phone-only "see whatever
+  WiFi I'm on right now" mode is not achievable within this architecture —
+  it would need a native iOS/Android app doing its own on-device active
+  scanning (a different project; iOS in particular doesn't expose ARP to
+  third-party apps at all, jailbreak aside).
 
 ## Deployment model
 

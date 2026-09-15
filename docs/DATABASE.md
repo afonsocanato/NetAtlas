@@ -6,14 +6,16 @@ The schema's source of truth is [backend/supabase/schema.sql](../backend/supabas
 
 ## `networks`
 
-Represents a scanned LAN. Ships with a single implicit `default` network; the column exists from day one so multi-network support (future) is additive.
+Represents a scanned LAN — one row per distinct `NETATLAS_NETWORK_ID` an agent has ever reported with. Ships with a single implicit `default` network for the common single-agent case; run a second agent instance (its own `NETATLAS_NETWORK_ID`) inside another physical network to get a second row here. See [ARCHITECTURE.md#multi-network-model](ARCHITECTURE.md#multi-network-model) for how the dashboard picks which one a visitor sees.
 
-| Column       | Type        | Notes                              |
-|--------------|-------------|--------------------------------------|
-| id           | text PK     | e.g. `"default"`, or a UUID          |
-| name         | text        | user-friendly label, e.g. "Home"     |
-| cidr         | text        | e.g. `192.168.1.0/24`                |
-| created_at   | timestamptz |                                       |
+| Column         | Type        | Notes                                                              |
+|----------------|-------------|---------------------------------------------------------------------|
+| id             | text PK     | e.g. `"default"`, or whatever `NETATLAS_NETWORK_ID` an agent used    |
+| name           | text        | user-friendly label, e.g. "Home" — defaults to `id` until renamed    |
+| cidr           | text        | e.g. `192.168.1.0/24`                                                |
+| public_ip      | text null   | public IP the agent last reported from — backs the dashboard's auto-detect (see [networkContext.js](../backend/src/middleware/networkContext.js)) |
+| last_report_at | timestamptz null | updated on every agent report from this network                |
+| created_at     | timestamptz |                                                                       |
 
 ## `devices`
 
@@ -25,8 +27,9 @@ Represents a scanned LAN. Ships with a single implicit `default` network; the co
 | ip            | text        | last known IP (can change on DHCP renewal)                       |
 | hostname      | text null   | best-effort, from reverse DNS / mDNS / NetBIOS                   |
 | vendor        | text null   | resolved from MAC OUI prefix                                     |
-| device_type   | text        | `router` \| `computer` \| `phone` \| `tv` \| `iot` \| `unknown` — heuristic, user-editable |
-| custom_label  | text null   | user-defined display name, overrides hostname in UI              |
+| ble_name      | text null   | name from a nearby BLE advertisement, heuristically matched by the agent — see [agent/netatlas_agent/discovery/ble_match.py](../agent/netatlas_agent/discovery/ble_match.py); often absent |
+| device_type   | text        | `router` \| `computer` \| `phone` \| `tv` \| `iot` \| `watch` \| `speaker` \| `console` \| `camera` \| `unknown` — heuristic, user-editable |
+| custom_label  | text null   | user-defined display name — display priority in the UI is `custom_label` > `ble_name` > `hostname` > `vendor` |
 | status        | text        | `online` \| `offline`                                             |
 | missed_reports| integer     | consecutive agent reports this device was absent from             |
 | first_seen    | timestamptz | set once, on first insert                                         |

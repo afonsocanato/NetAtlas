@@ -34,7 +34,9 @@ Request body:
       "mac": "AA:BB:CC:DD:EE:FF",
       "hostname": "router.local",
       "vendor": "TP-Link",
-      "is_router": true
+      "is_router": true,
+      "device_type": "router",
+      "ble_name": null
     }
   ]
 }
@@ -42,7 +44,7 @@ Request body:
 Response: `202 Accepted`, `{ "received": 12, "new": 1, "updated": 11 }`
 
 ### `GET /api/devices`
-Query params: `status`, `vendor`, `device_type`, `q` (search by ip/hostname/mac).
+Query params: `status`, `vendor`, `deviceType`, `q` (search by ip/hostname/mac), `networkId` (override the auto-detected network — see [ARCHITECTURE.md#multi-network-model](ARCHITECTURE.md#multi-network-model)).
 Returns array of device objects (see DATABASE.md `devices` table, camelCased).
 
 ### `GET /api/devices/:id`
@@ -55,17 +57,23 @@ Body: `{ "customLabel"?: string, "deviceType"?: string }` — user edits only; d
 Removes a stale/manually-added-in-error device record.
 
 ### `GET /api/network/summary`
+Query params: `networkId` (same override as above).
 Returns aggregate stats for the dashboard: `{ total, online, offline, byType: {...}, byVendor: {...} }`.
+
+### `GET /api/networks`
+Returns every network that has ever reported: `[{ id, name, lastReportAt }]` — backs the dashboard's network switcher.
 
 ### `GET /api/health`
 Liveness check, `{ "status": "ok" }`.
 
 ## WebSocket events (Socket.IO, namespace `/`)
 
+Connect with `auth: { token, networkId? }` — same JWT as REST, plus an optional `networkId` to pin the room to a specific network (same override as the REST endpoints above); omit it to fall back to the IP-based auto-detect. Events are scoped per-network (a Socket.IO room per `network_id`), so a client only ever receives updates for the network it's joined.
+
 Server → client:
 - `device:new` — payload: full device object
-- `device:updated` — payload: full device object (covers hostname/IP changes, manual edits)
-- `device:online` / `device:offline` — payload: `{ id, status, lastSeen }`
+- `device:updated` — payload: full device object (covers hostname/IP changes, manual edits, and the offline→online transition)
+- `device:offline` — payload: `{ id, status, lastSeen }`
 - `scan:complete` — payload: `{ scannedAt, deviceCount }`
 
 Client → server: none required for MVP (frontend is read-mostly; edits go through REST `PATCH`, backend broadcasts the resulting `device:updated`).

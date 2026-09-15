@@ -69,7 +69,7 @@ Since your domain's DNS is already on Cloudflare, this is the easiest path — *
    ```bash
    ./deploy/cloudflared tunnel login
    ```
-   Opens a browser — log in and pick the `yourdomain.com` zone to authorize. This saves a cert to `~/.cloudflared/cert.pem`.
+   Opens a browser — log in and pick your domain's zone (e.g. `yourdomain.com`) to authorize. This saves a cert to `~/.cloudflared/cert.pem`.
 2. **Create the tunnel**:
    ```bash
    ./deploy/cloudflared tunnel create netatlas
