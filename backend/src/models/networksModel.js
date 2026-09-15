@@ -20,10 +20,19 @@ export const networksModel = {
     if (insertError) throw insertError;
   },
 
+  // More than one network can share a public IP (e.g. two agent network
+  // ids pointed at the same LAN, or — in dev/tests — everything running
+  // from one machine's loopback address), so this picks whichever reported
+  // most recently rather than erroring on an ambiguous match.
   async findByPublicIp(publicIp) {
     if (!publicIp) return null;
-    const { data, error } = await supabase.from('networks').select('id').eq('public_ip', publicIp).maybeSingle();
+    const { data, error } = await supabase
+      .from('networks')
+      .select('id')
+      .eq('public_ip', publicIp)
+      .order('last_report_at', { ascending: false })
+      .limit(1);
     if (error) throw error;
-    return data?.id ?? null;
+    return data?.[0]?.id ?? null;
   },
 };

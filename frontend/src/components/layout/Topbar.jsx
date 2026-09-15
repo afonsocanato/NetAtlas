@@ -26,6 +26,15 @@ function MoonIcon() {
   );
 }
 
+function RefreshIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+      <path d="M21 3v6h-6" />
+    </svg>
+  );
+}
+
 export function Topbar({
   search,
   onSearchChange,
@@ -33,6 +42,8 @@ export function Topbar({
   onStatusFilterChange,
   typeFilter,
   onTypeFilterChange,
+  onRefresh,
+  refreshing,
 }) {
   const { theme, toggleTheme } = useTheme();
 
@@ -69,6 +80,18 @@ export function Topbar({
           <option value="unknown">Unknown</option>
         </select>
       </div>
+
+      <button
+        className="ns-icon-btn"
+        onClick={onRefresh}
+        disabled={refreshing}
+        aria-label="Refresh devices"
+        title="Refresh now"
+      >
+        <span className={refreshing ? 'ns-icon-spin' : undefined}>
+          <RefreshIcon />
+        </span>
+      </button>
 
       <button
         className="ns-icon-btn"

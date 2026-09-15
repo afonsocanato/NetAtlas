@@ -1,0 +1,94 @@
+#!/bin/bash
+# NetAtlas control script — run this from the project root:
+#   ./netatlas start | stop | status | help
+set -uo pipefail
+
+UID_NUM=$(id -u)
+SERVICES=(backend caddy cloudflared agent)
+DOMAIN="https://netatlas.yourdomain.com"
+LOCAL_URL="http://localhost:8080"
+
+tutorial() {
+  cat <<EOF
+
+============================================================
+ NetAtlas — comandos (corre sempre a partir da pasta do projeto)
+============================================================
+
+  ./netatlas start     liga tudo: backend + proxy local + túnel público + agente
+  ./netatlas stop      desliga TUDO (nada fica a correr, local nem público)
+  ./netatlas status     mostra o que está ligado agora e testa os URLs
+  ./netatlas help       mostra esta ajuda
+
+  Público: $DOMAIN
+  Local:   $LOCAL_URL
+
+  "stop" desliga tudo de vez — nem volta a ligar sozinho ao reiniciar o Mac.
+  Corre "./netatlas start" sempre que quiseres pôr tudo a funcionar outra vez.
+============================================================
+
+EOF
+}
+
+status() {
+  echo "Estado dos serviços:"
+  local running=0
+  # One snapshot of `launchctl list`, reused for every service — querying
+  # it fresh per service occasionally raced with launchd and reported a
+  # running service as stopped.
+  local snapshot
+  snapshot=$(launchctl list 2>/dev/null)
+  for s in "${SERVICES[@]}"; do
+    if echo "$snapshot" | grep -q "com\.netatlas\.$s"; then
+      echo "  [ON]  $s"
+      running=$((running + 1))
+    else
+      echo "  [--]  $s"
+    fi
+  done
+  echo
+  printf "  URL local  (%s): " "$LOCAL_URL"
+  if curl -fsS -o /dev/null --max-time 3 "$LOCAL_URL/api/health" 2>/dev/null; then echo "OK"; else echo "sem resposta"; fi
+  printf "  URL público (%s): " "$DOMAIN"
+  if curl -fsS -o /dev/null --max-time 5 "$DOMAIN/api/health" 2>/dev/null; then echo "OK"; else echo "sem resposta"; fi
+  echo
+  if [ "$running" -eq 0 ]; then
+    echo "Tudo desligado."
+  fi
+}
+
+start_all() {
+  local missing=0
+  for s in "${SERVICES[@]}"; do
+    if [ ! -f "$HOME/Library/LaunchAgents/com.netatlas.$s.plist" ]; then
+      echo "Falta $HOME/Library/LaunchAgents/com.netatlas.$s.plist — ver docs/DEPLOYMENT.md."
+      missing=1
+    fi
+  done
+  [ "$missing" -eq 1 ] && return 1
+
+  for s in "${SERVICES[@]}"; do
+    launchctl enable "gui/$UID_NUM/com.netatlas.$s" 2>/dev/null
+    launchctl bootstrap "gui/$UID_NUM" "$HOME/Library/LaunchAgents/com.netatlas.$s.plist" 2>/dev/null \
+      || launchctl kickstart -k "gui/$UID_NUM/com.netatlas.$s" 2>/dev/null
+  done
+  echo "A ligar tudo... espera uns segundos e corre './netatlas status' para confirmar."
+}
+
+stop_all() {
+  for s in "${SERVICES[@]}"; do
+    launchctl bootout "gui/$UID_NUM/com.netatlas.$s" 2>/dev/null
+    launchctl disable "gui/$UID_NUM/com.netatlas.$s" 2>/dev/null
+  done
+  echo "Tudo desligado — backend, proxy local, túnel público e agente."
+  echo "Não volta a ligar sozinho, nem depois de reiniciares o Mac."
+}
+
+case "${1:-help}" in
+  start) start_all ;;
+  stop) stop_all ;;
+  status) status ;;
+  *) ;;
+esac
+
+tutorial

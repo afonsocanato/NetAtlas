@@ -80,11 +80,28 @@ export const deviceModel = {
     return toCamel(row);
   },
 
-  async markSeen(id, { ip, hostname, vendor }) {
+  // deviceTypeIfUnknown lets a later, better guess (e.g. a hostname that
+  // resolved this time when it didn't before) fill in a still-"unknown"
+  // device's type — but never overwrites a type the agent already guessed
+  // differently, or one the user set by hand via update().
+  async markSeen(id, { ip, hostname, vendor, deviceTypeIfUnknown }) {
     const patch = { status: 'online', missed_reports: 0, last_seen: new Date().toISOString() };
     if (ip != null) patch.ip = ip;
     if (hostname != null) patch.hostname = hostname;
     if (vendor != null) patch.vendor = vendor;
+
+    if (deviceTypeIfUnknown) {
+      const { data } = await supabase
+        .from('devices')
+        .update({ ...patch, device_type: deviceTypeIfUnknown })
+        .eq('id', id)
+        .eq('device_type', 'unknown')
+        .select()
+        .maybeSingle();
+      if (data) return toCamel(data);
+      // Row exists but device_type wasn't "unknown" — fall through and
+      // apply the rest of the patch without touching its type.
+    }
 
     const row = must(await supabase.from('devices').update(patch).eq('id', id).select().single());
     return toCamel(row);

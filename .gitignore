@@ -19,6 +19,9 @@ deploy/caddy
 deploy/cloudflared
 deploy/*.json
 deploy/cloudflared-config.local.yml
+# launchd plists are machine-specific (absolute paths, and the agent one
+# embeds AGENT_API_KEY) — keep them local, not in git.
+deploy/com.netatlas.*.plist
 
 # OS
 .DS_Store

@@ -10,6 +10,10 @@ class DiscoveredDevice:
     hostname: Optional[str] = None
     vendor: Optional[str] = None
     is_router: bool = False
+    # Heuristic guess only (hostname/vendor keywords) — the backend uses it
+    # just to seed a brand-new device, never to overwrite a type the user
+    # already set by hand. See discovery/classify.py.
+    device_type: Optional[str] = None
 
     def to_payload(self) -> dict:
         return {
@@ -18,4 +22,5 @@ class DiscoveredDevice:
             "hostname": self.hostname,
             "vendor": self.vendor,
             "is_router": self.is_router,
+            "device_type": self.device_type,
         }

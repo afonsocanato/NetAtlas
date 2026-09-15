@@ -20,17 +20,32 @@ function GraphIcon() {
 }
 
 function Dashboard() {
-  const { devices, loading, error } = useDevices();
+  const { devices, loading, error, refresh } = useDevices();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [selectedId, setSelectedId] = useState(null);
   const [summary, setSummary] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
   const detailsRef = useRef(null);
 
   useEffect(() => {
     api.getSummary().then(setSummary).catch(() => {});
   }, [devices]);
+
+  // Manual refresh: re-fetches devices + summary right away, instead of
+  // waiting for the next socket push from the agent's scan interval. Tracked
+  // separately from the hook's own `loading` (which only covers the very
+  // first fetch) so this only spins the topbar button, not the whole graph
+  // pane.
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([refresh(), api.getSummary().then(setSummary).catch(() => {})]);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   // On the stacked mobile layout, the details panel lands below the graph —
   // and a swipe starting on the graph pans/zooms it (Cytoscape) instead of
@@ -66,6 +81,8 @@ function Dashboard() {
         onStatusFilterChange={setStatusFilter}
         typeFilter={typeFilter}
         onTypeFilterChange={setTypeFilter}
+        onRefresh={handleRefresh}
+        refreshing={refreshing}
       />
       <div className="ns-main">
         <Sidebar summary={summary} />

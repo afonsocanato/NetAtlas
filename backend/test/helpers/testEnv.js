@@ -12,3 +12,7 @@ process.env.ADMIN_PASSWORD = 'test-admin-password';
 process.env.__TEST_ADMIN_PASSWORD = 'test-admin-password';
 process.env.JWT_SECRET = 'test-jwt-secret';
 process.env.SETTINGS_KEY_PREFIX = 'test_';
+// Force-enabled regardless of your own .env's NETATLAS_DISABLE_AUTH — the
+// auth tests specifically exercise the "login required" code path, which
+// wouldn't mean anything with it off.
+process.env.NETATLAS_DISABLE_AUTH = 'false';

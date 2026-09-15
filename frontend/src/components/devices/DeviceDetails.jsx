@@ -1,6 +1,7 @@
 import { forwardRef, useState } from 'react';
 import { api } from '../../api/client.js';
 import { TYPE_COLOR_VAR } from '../../constants/deviceTypes.js';
+import { formatDeviceName } from '../../utils/formatName.js';
 
 function CloseIcon() {
   return (
@@ -79,7 +80,7 @@ export const DeviceDetails = forwardRef(function DeviceDetails({ device, onClose
 
       <div className="ns-details__header">
         <span className="ns-details__type-dot" style={{ background: TYPE_COLOR_VAR[device.deviceType] }} />
-        <h2>{device.customLabel || device.hostname || device.ip}</h2>
+        <h2>{formatDeviceName(device.customLabel || device.hostname) || device.ip}</h2>
       </div>
 
       <span className={`ns-badge ns-badge--${device.status}`}>{device.status}</span>

@@ -1,8 +1,12 @@
 import { useEffect, useRef } from 'react';
 import cytoscape from 'cytoscape';
+import nodeHtmlLabel from 'cytoscape-node-html-label';
 import { TYPE_COLOR_HEX } from '../../constants/deviceTypes.js';
 import { deviceIconDataUri } from './deviceIcons.js';
 import { useTheme } from '../../context/ThemeContext.jsx';
+import { formatDeviceName } from '../../utils/formatName.js';
+
+cytoscape.use(nodeHtmlLabel);
 
 const LAYOUT = {
   name: 'concentric',
@@ -14,14 +18,28 @@ const LAYOUT = {
 };
 
 function toElements(devices) {
-  const nodes = devices.map((d) => ({
-    data: {
-      id: String(d.id),
-      label: d.customLabel || d.hostname || d.ip,
-      type: d.deviceType,
-      status: d.status,
-    },
-  }));
+  const nodes = devices.map((d) => {
+    const hostLabel = d.customLabel || d.hostname;
+    // No hostname/custom label (common — see docs/LIMITATIONS.md on
+    // reverse-DNS/mDNS failing often) but the MAC's OUI vendor lookup
+    // resolved a brand (e.g. "Apple", "Xiaomi"): show that instead of just
+    // the bare IP. Vendor strings come pre-formatted from the OUI table, so
+    // they skip formatDeviceName (which assumes lowercase hostnames and
+    // would mangle already-correct casing like "TP-LINK").
+    const name = hostLabel ? formatDeviceName(hostLabel) : d.vendor || null;
+    return {
+      data: {
+        id: String(d.id),
+        // Real DOM label (see nodeHtmlLabel below) needs the raw name/ip
+        // separately so it can style them differently — this plain-text
+        // fallback is only what Cytoscape itself would ever show.
+        name,
+        ip: d.ip,
+        type: d.deviceType,
+        status: d.status,
+      },
+    };
+  });
 
   const router = devices.find((d) => d.isRouter);
   const edges = router
@@ -35,16 +53,7 @@ function toElements(devices) {
   return [...nodes, ...edges];
 }
 
-function buildStyle() {
-  const root = getComputedStyle(document.documentElement);
-  const cssVar = (name, fallback) => root.getPropertyValue(name).trim() || fallback;
-
-  const textColor = cssVar('--ns-text', '#e7e9ee');
-  const panelColor = cssVar('--ns-panel', '#12151f');
-  const edgeColor = cssVar('--ns-edge', '#333a4d');
-  const onlineColor = cssVar('--ns-online', '#22c55e');
-  const offlineColor = cssVar('--ns-offline', '#f87171');
-
+function nodeStylesheet() {
   return [
     {
       selector: 'node',
@@ -54,21 +63,22 @@ function buildStyle() {
         'background-fit': 'contain',
         'background-width': '58%',
         'background-height': '58%',
-        label: 'data(label)',
-        color: textColor,
-        'font-family': 'Inter, system-ui, sans-serif',
-        'font-size': 11,
-        'font-weight': 500,
-        'text-valign': 'bottom',
-        'text-margin-y': 8,
-        'text-background-color': panelColor,
-        'text-background-opacity': 0.85,
-        'text-background-shape': 'roundrectangle',
-        'text-background-padding': '3px',
         width: (ele) => (ele.data('type') === 'router' ? 52 : 36),
         height: (ele) => (ele.data('type') === 'router' ? 52 : 36),
-        'border-width': 3,
-        'border-color': (ele) => (ele.data('status') === 'online' ? onlineColor : offlineColor),
+        // A plain constant here (e.g. `3`) gets stuck at Cytoscape's default
+        // 0px on first paint and never resolves to the real value until
+        // something else forces a style recompute (e.g. selecting the node)
+        // — combining transition-property with a scalar (non-mapper) value
+        // on elements added via cy.json() hits that. Mapper functions (like
+        // width/height above) don't have this problem, so wrap the constant
+        // in one purely to dodge it.
+        'border-width': () => 3,
+        'border-color': (ele) => {
+          const root = getComputedStyle(document.documentElement);
+          const online = root.getPropertyValue('--ns-online').trim() || '#22c55e';
+          const offline = root.getPropertyValue('--ns-offline').trim() || '#f87171';
+          return ele.data('status') === 'online' ? online : offline;
+        },
         'border-opacity': (ele) => (ele.data('status') === 'online' ? 0.9 : 0.7),
         'transition-property': 'border-width, border-color, background-color',
         'transition-duration': 150,
@@ -77,21 +87,45 @@ function buildStyle() {
     {
       selector: 'node:selected',
       style: {
-        'border-width': 5,
+        'border-width': () => 5,
         'border-color': (ele) => (ele.data('type') === 'router' ? TYPE_COLOR_HEX.router : '#ffffff'),
       },
     },
-    {
-      selector: 'edge',
-      style: {
-        width: 1.5,
-        'line-color': edgeColor,
-        'line-style': (ele) => (ele.data('status') === 'offline' ? 'dashed' : 'solid'),
-        'line-opacity': (ele) => (ele.data('status') === 'offline' ? 0.5 : 1),
-        'curve-style': 'straight',
-      },
-    },
   ];
+}
+
+// Edges are styled with direct inline values (ele.style(...)) rather than a
+// stylesheet 'edge' selector. cytoscape-node-html-label, once registered on
+// an instance, corrupts the FIRST stylesheet-based style resolution for
+// edges specifically — they render at a fixed ~30px width with
+// curve-style: 'haystack' (Cytoscape's hard default) no matter what the
+// 'edge' selector declares, and re-applying the stylesheet afterward
+// doesn't fix already-added elements. Setting properties directly on each
+// edge element sidesteps that resolution path entirely and is unaffected.
+function applyEdgeStyle(cy) {
+  const root = getComputedStyle(document.documentElement);
+  const edgeColor = root.getPropertyValue('--ns-edge').trim() || '#333a4d';
+  cy.edges().forEach((ele) => {
+    ele.style({
+      width: 1.5,
+      'line-color': edgeColor,
+      'line-style': ele.data('status') === 'offline' ? 'dashed' : 'solid',
+      'line-opacity': ele.data('status') === 'offline' ? 0.5 : 1,
+      'curve-style': 'straight',
+    });
+  });
+}
+
+function labelTemplate(data) {
+  const nameLine = data.name ? `<div class="ns-node-label__name">${escapeHtml(data.name)}</div>` : '';
+  // If there's no name, the IP is the only line and should read like the
+  // "name" (normal size/weight) rather than a subtitle.
+  const ipClass = data.name ? 'ns-node-label__ip' : 'ns-node-label__name';
+  return `<div class="ns-node-label">${nameLine}<div class="${ipClass}">${escapeHtml(data.ip ?? '')}</div></div>`;
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 }
 
 export function NetworkGraph({ devices, onSelectDevice }) {
@@ -104,13 +138,28 @@ export function NetworkGraph({ devices, onSelectDevice }) {
 
     cyRef.current = cytoscape({
       container: containerRef.current,
-      elements: toElements(devices),
-      style: buildStyle(),
-      layout: LAYOUT,
+      elements: [],
+      style: nodeStylesheet(),
       minZoom: 0.3,
       maxZoom: 3,
       wheelSensitivity: 0.25,
     });
+
+    cyRef.current.nodeHtmlLabel([
+      {
+        query: 'node',
+        halign: 'center',
+        valign: 'bottom',
+        halignBox: 'center',
+        valignBox: 'bottom',
+        cssClass: 'ns-node-label-wrap',
+        tpl: labelTemplate,
+      },
+    ]);
+
+    cyRef.current.json({ elements: toElements(devices) });
+    applyEdgeStyle(cyRef.current);
+    cyRef.current.layout(LAYOUT).run();
 
     cyRef.current.on('tap', 'node', (evt) => {
       onSelectDevice?.(Number(evt.target.id()));
@@ -126,14 +175,17 @@ export function NetworkGraph({ devices, onSelectDevice }) {
   useEffect(() => {
     if (!cyRef.current) return;
     cyRef.current.json({ elements: toElements(devices) });
+    applyEdgeStyle(cyRef.current);
     cyRef.current.layout(LAYOUT).run();
   }, [devices]);
 
   useEffect(() => {
     // Re-resolve CSS vars (they only get their final value after data-theme
-    // is applied to <html>), so the graph repaints in the new palette.
+    // is applied to <html>), so the graph repaints in the new palette. The
+    // HTML labels themselves use CSS vars directly and repaint for free.
     if (!cyRef.current) return;
-    cyRef.current.style(buildStyle());
+    cyRef.current.style(nodeStylesheet());
+    applyEdgeStyle(cyRef.current);
   }, [theme]);
 
   return <div ref={containerRef} className="ns-graph" />;

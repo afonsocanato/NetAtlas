@@ -8,16 +8,34 @@ import subprocess
 from typing import Dict
 
 
-MAC_RE = re.compile(r"([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}")
+# Octets are 1-2 hex digits: BSD/macOS's `arp -a` does NOT zero-pad them
+# (e.g. "8:f9:7e:2a:3:2d"), so a strict {2}-per-octet pattern silently
+# drops any real device whose MAC happens to have a leading-zero octet.
+MAC_RE = re.compile(r"([0-9A-Fa-f]{1,2}[:-]){5}[0-9A-Fa-f]{1,2}")
 IP_RE = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
+
+BROADCAST_MAC = "FF:FF:FF:FF:FF:FF"
 
 
 def normalize_mac(mac: str) -> str:
-    return mac.upper().replace("-", ":")
+    octets = re.split(r"[:-]", mac)
+    return ":".join(o.upper().zfill(2) for o in octets)
+
+
+def is_multicast_or_broadcast(mac: str) -> bool:
+    if mac == BROADCAST_MAC:
+        return True
+    first_octet = int(mac.split(":")[0], 16)
+    # The multicast/group bit is the least-significant bit of the first
+    # octet (IEEE 802) — matches mDNS (01:00:5E:...), IPv6 multicast
+    # (33:33:...), etc. None of these are a real, addressable device.
+    return bool(first_octet & 0x01)
 
 
 def read_arp_table() -> Dict[str, str]:
-    """Returns {ip: mac} for every entry the OS currently has cached."""
+    """Returns {ip: mac} for every real-device entry the OS currently has
+    cached — broadcast/multicast entries are filtered out, they're not
+    devices."""
     system = platform.system()
     entries: Dict[str, str] = {}
 
@@ -40,6 +58,9 @@ def read_arp_table() -> Dict[str, str]:
         if ip_match and mac_match:
             if "incomplete" in line.lower() or "failed" in line.lower():
                 continue
-            entries[ip_match.group(0)] = normalize_mac(mac_match.group(0))
+            mac = normalize_mac(mac_match.group(0))
+            if is_multicast_or_broadcast(mac):
+                continue
+            entries[ip_match.group(0)] = mac
 
     return entries

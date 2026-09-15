@@ -100,6 +100,29 @@ Keep the Mac awake (System Settings → Battery/Energy → prevent sleep) and al
 
 **Don't have Cloudflare DNS, or prefer classic port-forwarding instead?** See steps 1–4 further up this doc (DNS `A` record + your own reverse proxy with Let's Encrypt) instead of this section.
 
+## Keeping it running: launchd (macOS)
+
+Processes started by hand in a terminal die when the terminal closes, the Mac sleeps oddly, or any of them crash — and nothing brings them back. `launchd` fixes that: it starts all four processes (backend, Caddy, the tunnel, and the agent) on login and auto-restarts any one of them if it exits, without you noticing.
+
+Templates are in [deploy/](../deploy/) (`com.netatlas.backend.plist`, `.caddy.plist`, `.cloudflared.plist`, `.agent.plist`) — gitignored since they embed your machine's absolute paths and the agent one embeds `AGENT_API_KEY`. Copy them into place and load once:
+
+```bash
+cp deploy/com.netatlas.*.plist ~/Library/LaunchAgents/
+for label in backend caddy cloudflared agent; do
+  launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.netatlas.$label.plist
+done
+```
+
+Useful commands afterward:
+
+```bash
+launchctl list | grep netatlas          # PID + last exit status per service
+launchctl kickstart -k gui/$(id -u)/com.netatlas.caddy   # force-restart one
+launchctl bootout gui/$(id -u)/com.netatlas.caddy        # stop + unload one
+```
+
+Logs go to the same `/tmp/*.log` files as the manual commands used throughout this doc. If you change a plist (e.g. a new `AGENT_API_KEY` after rotating it), `bootout` then `bootstrap` it again to pick up the change.
+
 ## Security notes
 
 - Never set `NETATLAS_DISABLE_AUTH=true` on anything internet-reachable.

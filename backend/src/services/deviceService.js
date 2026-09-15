@@ -14,6 +14,12 @@ export const deviceService = {
     for (const d of devices) {
       const mac = d.mac ? d.mac.toUpperCase() : null;
       const existing = await deviceModel.findByMacOrIp({ networkId, mac, ip: d.ip });
+      const isRouter = Boolean(d.is_router ?? d.isRouter);
+      // The agent's guess (hostname/vendor keywords) — used to seed a
+      // brand-new device's type, or to upgrade an existing one still stuck
+      // at "unknown". Never overwrites a type the user set by hand or a
+      // different guess from an earlier report (see markSeen()).
+      const guessedType = isRouter ? 'router' : (d.device_type ?? d.deviceType) || null;
 
       if (!existing) {
         const device = await deviceModel.create({
@@ -22,8 +28,8 @@ export const deviceService = {
           ip: d.ip,
           hostname: d.hostname,
           vendor: d.vendor,
-          isRouter: Boolean(d.is_router ?? d.isRouter),
-          deviceType: d.is_router ?? d.isRouter ? 'router' : 'unknown',
+          isRouter,
+          deviceType: guessedType ?? 'unknown',
         });
         seenIds.push(device.id);
         created += 1;
@@ -33,6 +39,7 @@ export const deviceService = {
           ip: d.ip,
           hostname: d.hostname,
           vendor: d.vendor,
+          deviceTypeIfUnknown: guessedType,
         });
         seenIds.push(device.id);
         updated += 1;

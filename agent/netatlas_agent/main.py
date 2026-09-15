@@ -19,6 +19,7 @@ from .discovery.arp_scan import read_arp_table
 from .discovery.icmp_scan import ping_sweep
 from .discovery.hostname import resolve_hostname
 from .discovery.oui import lookup_vendor
+from .discovery.classify import guess_device_type
 from .models import DiscoveredDevice
 from .client import report_devices
 
@@ -42,13 +43,15 @@ def run_discovery_cycle() -> None:
     for ip, mac in arp_table.items():
         hostname = resolve_hostname(ip) if config.resolve_hostnames else None
         vendor = lookup_vendor(mac)
+        is_router = ip == gateway_ip
         devices.append(
             DiscoveredDevice(
                 ip=ip,
                 mac=mac,
                 hostname=hostname,
                 vendor=vendor,
-                is_router=(ip == gateway_ip),
+                is_router=is_router,
+                device_type="router" if is_router else guess_device_type(hostname, vendor),
             )
         )
 
