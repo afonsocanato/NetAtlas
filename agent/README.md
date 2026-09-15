@@ -35,7 +35,7 @@ The backend auto-generates this key on first boot if `AGENT_API_KEY` isn't set o
 ## Notes
 
 - Passive-only mode (`NETATLAS_ACTIVE_PROBE=false`) never sends any packet — it only reads the OS's existing ARP cache. It may miss idle devices; enable active probe for a fuller picture at the cost of a light ping sweep.
-- The bundled `oui_data/sample_oui.json` is a tiny example table. For real vendor coverage, download the full IEEE OUI list (link in that file) and drop it in the same location/format.
+- Vendor lookups use `oui_data/full_oui.json`, a full snapshot of IEEE's MA-L OUI registry (~40k entries) — `oui_data/sample_oui.json` is only a tiny fallback for if that file is ever missing. Re-run `python3 scripts/update_oui.py` occasionally to refresh it (IEEE adds assignments continuously; there's no automatic/runtime refresh, this is a point-in-time snapshot).
 - BLE scanning needs a Bluetooth adapter and OS permission for whatever runs the agent:
   - **macOS**: the first scan triggers a system Bluetooth permission prompt — it needs an interactive GUI session to show up (a headless/SSH/launchd-before-login context won't see it, and the scan silently no-ops instead). If it was denied, re-grant it in System Settings → Privacy & Security → Bluetooth.
   - **Linux**: the user running the agent typically needs to be in the `bluetooth` group (or run as root).

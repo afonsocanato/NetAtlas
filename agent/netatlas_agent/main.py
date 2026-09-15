@@ -64,8 +64,15 @@ def run_discovery_cycle() -> None:
     if config.ble_scan:
         sightings = scan_ble(config.ble_scan_seconds)
         if sightings:
-            log.info("BLE scan saw %d named advertisement(s)", len(sightings))
+            log.info(
+                "BLE scan saw %d named advertisement(s): %s",
+                len(sightings),
+                ", ".join(f"{s.name!r} ({s.vendor or 'unknown vendor'}, {s.rssi} dBm)" for s in sightings),
+            )
         match_ble_names(devices, sightings)
+        matched = sum(1 for d in devices if d.ble_name)
+        if matched:
+            log.info("BLE-matched %d device(s) this cycle", matched)
         # A matched BLE name (e.g. "Ana's Apple Watch") is itself a strong
         # classification signal, often better than the ARP hostname it had
         # (or didn't have) — re-guess using it for anything that's still
