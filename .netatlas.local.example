@@ -1,0 +1,4 @@
+# Copy this file to .netatlas.local (gitignored) and fill in your real
+# domain — the ./netatlas control script sources it automatically if
+# present, overriding the generic placeholder in the tracked script.
+DOMAIN="https://netatlas.yourdomain.com"

@@ -8,7 +8,11 @@ set -uo pipefail
 
 UID_NUM=$(id -u)
 SERVICES=(backend caddy cloudflared agent)
+# Real public domain lives in .netatlas.local (gitignored, not committed) so
+# this tracked script stays generic for the public repo — copy
+# .netatlas.local.example to .netatlas.local and set DOMAIN there.
 DOMAIN="https://netatlas.yourdomain.com"
+[ -f "$(dirname "$0")/.netatlas.local" ] && source "$(dirname "$0")/.netatlas.local"
 LOCAL_URL="http://localhost:8080"
 
 tutorial() {
