@@ -116,15 +116,6 @@ Log in with that, then either paste the printed agent key into step 3, or grab i
 
 To pin your own credentials instead of the generated ones, set `ADMIN_USERNAME`/`ADMIN_PASSWORD`/`AGENT_API_KEY` in `backend/.env` before first boot.
 
-### No agent handy? Seed some demo data
-
-```bash
-cd backend
-npm run seed
-```
-
-Populates the database with ~10 plausible fake devices (router, laptop, phones, TV, IoT, one offline) so the dashboard has something to show immediately.
-
 ### Or run it all with Docker Compose
 
 Create a `.env` next to `docker-compose.yml` with your Supabase project's `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (compose reads it automatically), then:
@@ -133,7 +124,7 @@ Create a `.env` next to `docker-compose.yml` with your Supabase project's `SUPAB
 docker compose up --build
 ```
 
-Builds and starts the backend (pre-seeded with the same mock data) and the frontend, wired together — `http://localhost:5173` is ready. The discovery agent is intentionally not containerized (it needs direct access to the host's ARP table/LAN); run it on the host as in step 3 above.
+Builds and starts the backend and the frontend, wired together — `http://localhost:5173` is ready. The discovery agent is intentionally not containerized (it needs direct access to the host's ARP table/LAN); run it on the host as in step 3 above.
 
 ## Tests
 
@@ -156,7 +147,7 @@ NetAtlas/
 ├── backend/    # Node.js/Express API, Supabase (Postgres) storage, Socket.IO real-time layer
 │   ├── supabase/schema.sql  # run once in the Supabase SQL Editor — source of truth for the schema
 │   ├── src/
-│   │   ├── db/          # supabase client + seed.js (mock data)
+│   │   ├── db/          # supabase client
 │   │   ├── models/       # device + settings queries (Supabase JS client)
 │   │   ├── services/     # ingestion + online/offline reconciliation
 │   │   ├── security/     # secrets.js — auto-generates agent key/JWT secret/admin login on first boot

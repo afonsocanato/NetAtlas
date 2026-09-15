@@ -104,14 +104,21 @@ function nodeStylesheet() {
 // edge element sidesteps that resolution path entirely and is unaffected.
 function applyEdgeStyle(cy) {
   const root = getComputedStyle(document.documentElement);
-  const edgeColor = root.getPropertyValue('--ns-edge').trim() || '#333a4d';
-  cy.edges().forEach((ele) => {
+  const onlineColor = root.getPropertyValue('--ns-edge-online').trim() || '#0f9488';
+  const offlineColor = root.getPropertyValue('--ns-edge').trim() || '#333a4d';
+  cy.edges().forEach((ele, i) => {
+    const online = ele.data('status') !== 'offline';
     ele.style({
-      width: 1.5,
-      'line-color': edgeColor,
-      'line-style': ele.data('status') === 'offline' ? 'dashed' : 'solid',
-      'line-opacity': ele.data('status') === 'offline' ? 0.5 : 1,
-      'curve-style': 'straight',
+      width: online ? 2 : 1.5,
+      'line-color': online ? onlineColor : offlineColor,
+      'line-style': online ? 'solid' : 'dashed',
+      'line-opacity': online ? 0.75 : 0.5,
+      // A gentle, consistent bow instead of a dead-straight line — every
+      // other edge curves the opposite way so spokes radiating from the
+      // router fan out instead of visually overlapping near the center.
+      'curve-style': 'unbundled-bezier',
+      'control-point-distances': i % 2 === 0 ? 22 : -22,
+      'control-point-weights': 0.5,
     });
   });
 }

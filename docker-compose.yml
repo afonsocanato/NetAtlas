@@ -1,5 +1,4 @@
-# One-command demo: backend + frontend, backend pre-seeded with mock devices
-# so the dashboard is explorable without running the real agent.
+# One-command setup: backend + frontend.
 # The discovery agent is intentionally NOT containerized here — it needs
 # direct access to the host's network stack (ARP table, real LAN), which
 # containers don't provide by default. Run it on the host: see agent/README.md.
@@ -27,7 +26,6 @@ services:
       # docs/DEPLOYMENT.md).
       # ADMIN_USERNAME: admin
       # ADMIN_PASSWORD: change-me
-    command: sh -c "node src/db/seed.js && node src/server.js"
 
   frontend:
     build:

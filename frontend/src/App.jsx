@@ -102,9 +102,7 @@ function Dashboard() {
             <div className="ns-graph-empty">
               <GraphIcon />
               <div className="ns-graph-empty__title">No devices yet</div>
-              <div className="ns-graph-empty__hint">
-                Run the discovery agent, or populate demo data from the backend with <code>npm run seed</code>.
-              </div>
+              <div className="ns-graph-empty__hint">Run the discovery agent to start seeing devices here.</div>
             </div>
           ) : filtered.length === 0 ? (
             <div className="ns-graph-empty">

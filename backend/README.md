@@ -38,13 +38,3 @@ npm test
 ```
 
 Runs on Node's built-in test runner (`node --test`) **against your configured Supabase project** — there's no local/in-memory database anymore, so `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` must be set (in `.env` or the environment) before running tests. Tests use a dedicated `network_id` (`test`) isolated from your real `default` network and clean up their own rows, but if you'd rather keep test traffic fully separate, point `.env` at a second, throwaway Supabase project while testing. Covers device upserts, custom-field updates, the online/offline reconciliation logic in [src/services/deviceService.js](src/services/deviceService.js), and the auth flow.
-
-## Demo data
-
-No agent running yet? Populate the database with a plausible fake home network:
-
-```bash
-npm run seed
-```
-
-Wipes and reseeds `devices`/`presence_events` (network `default`) with ~10 mock devices (router, laptop, phones, TV, IoT, one offline) so the frontend graph has something to show immediately.

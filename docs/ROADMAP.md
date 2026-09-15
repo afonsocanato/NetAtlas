@@ -14,8 +14,7 @@
 
 ## Phase 4 — Polish for portfolio (in progress)
 - ✅ Backend unit tests (`backend/test/`, `node --test`) covering device upserts and online/offline reconciliation.
-- ✅ Seed/mock data mode (`npm run seed`) so the dashboard is explorable without running the agent.
-- ✅ Docker Compose (backend + frontend, backend auto-seeded) for a one-command demo. Agent stays host-run by design — see [ARCHITECTURE.md](ARCHITECTURE.md).
+- ✅ Docker Compose (backend + frontend) for a one-command setup. Agent stays host-run by design — see [ARCHITECTURE.md](ARCHITECTURE.md).
 - ⬜ Screenshots/GIF in README.
 - ⬜ Agent unit tests (ARP/hostname/OUI parsing).
 - ⬜ Frontend component tests.
