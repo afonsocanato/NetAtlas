@@ -14,6 +14,10 @@ class DiscoveredDevice:
     # just to seed a brand-new device, never to overwrite a type the user
     # already set by hand. See discovery/classify.py.
     device_type: Optional[str] = None
+    # Name from a nearby BLE advertisement, heuristically matched to this
+    # device by discovery/ble_match.py — best-effort, often absent. See that
+    # module's docstring for why this can't be a certain match.
+    ble_name: Optional[str] = None
 
     def to_payload(self) -> dict:
         return {
@@ -23,4 +27,5 @@ class DiscoveredDevice:
             "vendor": self.vendor,
             "is_router": self.is_router,
             "device_type": self.device_type,
+            "ble_name": self.ble_name,
         }

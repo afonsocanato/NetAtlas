@@ -9,6 +9,7 @@ function toCamel(row) {
     ip: row.ip,
     hostname: row.hostname,
     vendor: row.vendor,
+    bleName: row.ble_name,
     deviceType: row.device_type,
     customLabel: row.custom_label,
     status: row.status,
@@ -68,6 +69,7 @@ export const deviceModel = {
           ip: device.ip ?? null,
           hostname: device.hostname ?? null,
           vendor: device.vendor ?? null,
+          ble_name: device.bleName ?? null,
           device_type: device.deviceType ?? 'unknown',
           status: 'online',
           is_router: Boolean(device.isRouter),
@@ -84,11 +86,14 @@ export const deviceModel = {
   // resolved this time when it didn't before) fill in a still-"unknown"
   // device's type — but never overwrites a type the agent already guessed
   // differently, or one the user set by hand via update().
-  async markSeen(id, { ip, hostname, vendor, deviceTypeIfUnknown }) {
+  async markSeen(id, { ip, hostname, vendor, bleName, deviceTypeIfUnknown }) {
     const patch = { status: 'online', missed_reports: 0, last_seen: new Date().toISOString() };
     if (ip != null) patch.ip = ip;
     if (hostname != null) patch.hostname = hostname;
     if (vendor != null) patch.vendor = vendor;
+    // Only overwrite on a fresh match — a cycle with no BLE sighting
+    // shouldn't erase a name a previous cycle already confidently matched.
+    if (bleName != null) patch.ble_name = bleName;
 
     if (deviceTypeIfUnknown) {
       const { data } = await supabase

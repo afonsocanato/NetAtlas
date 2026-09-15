@@ -20,6 +20,8 @@ from .discovery.icmp_scan import ping_sweep
 from .discovery.hostname import resolve_hostname
 from .discovery.oui import lookup_vendor
 from .discovery.classify import guess_device_type
+from .discovery.ble_scan import scan_ble
+from .discovery.ble_match import match_ble_names
 from .models import DiscoveredDevice
 from .client import report_devices
 
@@ -58,6 +60,19 @@ def run_discovery_cycle() -> None:
     if not devices:
         log.warning("No devices discovered this cycle — check ARP permissions/firewall")
         return
+
+    if config.ble_scan:
+        sightings = scan_ble(config.ble_scan_seconds)
+        if sightings:
+            log.info("BLE scan saw %d named advertisement(s)", len(sightings))
+        match_ble_names(devices, sightings)
+        # A matched BLE name (e.g. "Ana's Apple Watch") is itself a strong
+        # classification signal, often better than the ARP hostname it had
+        # (or didn't have) — re-guess using it for anything that's still
+        # sitting at "unknown".
+        for d in devices:
+            if d.ble_name and d.device_type == "unknown":
+                d.device_type = guess_device_type(d.ble_name, d.vendor)
 
     try:
         result = report_devices(subnet_cidr, devices)

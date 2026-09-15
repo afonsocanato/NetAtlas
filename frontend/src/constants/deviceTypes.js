@@ -7,6 +7,10 @@ export const TYPE_COLOR_VAR = {
   phone: 'var(--ns-phone)',
   tv: 'var(--ns-tv)',
   iot: 'var(--ns-iot)',
+  watch: 'var(--ns-watch)',
+  speaker: 'var(--ns-speaker)',
+  console: 'var(--ns-console)',
+  camera: 'var(--ns-camera)',
   unknown: 'var(--ns-unknown)',
 };
 
@@ -16,7 +20,11 @@ export const TYPE_COLOR_HEX = {
   phone: '#2dd4bf',
   tv: '#f472b6',
   iot: '#34d399',
+  watch: '#a78bfa',
+  speaker: '#fb923c',
+  console: '#818cf8',
+  camera: '#ef4444',
   unknown: '#94a3b8',
 };
 
-export const TYPE_ORDER = ['router', 'computer', 'phone', 'tv', 'iot', 'unknown'];
+export const TYPE_ORDER = ['router', 'computer', 'phone', 'tv', 'iot', 'watch', 'speaker', 'console', 'camera', 'unknown'];

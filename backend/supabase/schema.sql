@@ -28,6 +28,11 @@ create table if not exists devices (
   ip text,
   hostname text,
   vendor text,
+  -- Best-effort name from a nearby BLE advertisement, heuristically matched
+  -- to this device by the agent (see agent/netatlas_agent/discovery/
+  -- ble_match.py) — often absent. Displayed ahead of `hostname` when
+  -- present; never a certain identification.
+  ble_name text,
   device_type text not null default 'unknown',
   custom_label text,
   status text not null default 'online',
@@ -38,6 +43,9 @@ create table if not exists devices (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- Added after initial release — safe to re-run on an existing table.
+alter table devices add column if not exists ble_name text;
 
 create unique index if not exists idx_devices_network_mac
   on devices (network_id, mac) where mac is not null;

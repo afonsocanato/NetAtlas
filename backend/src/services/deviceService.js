@@ -28,6 +28,7 @@ export const deviceService = {
           ip: d.ip,
           hostname: d.hostname,
           vendor: d.vendor,
+          bleName: d.ble_name,
           isRouter,
           deviceType: guessedType ?? 'unknown',
         });
@@ -39,6 +40,7 @@ export const deviceService = {
           ip: d.ip,
           hostname: d.hostname,
           vendor: d.vendor,
+          bleName: d.ble_name,
           deviceTypeIfUnknown: guessedType,
         });
         seenIds.push(device.id);

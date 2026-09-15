@@ -13,6 +13,13 @@ Browsers deliberately have no access to raw sockets, ARP tables, or ICMP — thi
 - **MAC address may be hidden.** Modern iOS/Android use MAC randomization for network scans/certain states, so the MAC (and therefore vendor lookup) can be inconsistent across sessions for phones — expect occasional duplicate entries for the same physical phone until it settles on a stable address for that network.
 - **OUI → vendor lookup is a prefix table, not identification of the device model.** It tells you "Apple," "Samsung," "Espressif (generic IoT chip)," not "iPhone 15." Device type is therefore a heuristic (vendor + hostname pattern), always user-correctable via `customLabel`/`deviceType`.
 
+## BLE name matching is a heuristic, not identification
+
+- **BLE and WiFi almost always advertise different MAC addresses for the same physical device**, and modern iOS/Android additionally *rotate* the BLE address periodically. There is no reliable way to prove a BLE sighting and an ARP-discovered device are the same device from passive scanning alone.
+- To still get some value out of it, the agent only assigns a BLE-advertised name to a device when, in the same scan cycle: both resolve to the **same OUI vendor**, the BLE signal is **strong** (close by), and each side has **exactly one** candidate for that vendor — see [agent/netatlas_agent/discovery/ble_match.py](../agent/netatlas_agent/discovery/ble_match.py). This trades recall for precision: most cycles match nothing, but a match should rarely be wrong. It can still occasionally be wrong (e.g. two same-vendor devices where only one happened to be advertising loudly enough that cycle).
+- Once matched, a device's `ble_name` is sticky — a later cycle with no BLE data for it doesn't clear a previously-matched name, only a new confident match overwrites it.
+- BLE scanning needs a Bluetooth adapter, OS-level permission, and (on macOS specifically) an interactive GUI session for the one-time permission prompt to even appear — see [agent/README.md](../agent/README.md) for the per-OS notes. When unavailable, it silently contributes nothing rather than failing the whole discovery cycle.
+
 ## Cross-platform (Windows/Linux/macOS) limitations
 
 - ARP table location/format differs: Windows `arp -a`, Linux `/proc/net/arp` or `ip neigh`, macOS `arp -a` (BSD format). The agent's `discovery` module abstracts this per-OS.

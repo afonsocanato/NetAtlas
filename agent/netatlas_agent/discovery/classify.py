@@ -11,6 +11,7 @@ import re
 # not computer, even though vendor is Apple).
 _HOSTNAME_RULES = [
     ("tv", ["appletv", "apple-tv", r"\btv\b", "roku", "chromecast", "firetv", "fire-tv", "androidtv", "bravia", "webos"]),
+    ("watch", ["applewatch", "apple-watch", "galaxywatch", "galaxy-watch", r"\bwatch\b", "fitbit", "garmin", "miband", "mi-band"]),
     ("phone", ["iphone", "ipad", "android", "galaxy-s", "galaxy-note", "pixel-", r"\bphone\b", "smartphone", "tablet"]),
     (
         "computer",
@@ -31,12 +32,12 @@ _HOSTNAME_RULES = [
             "thinkpad",
         ],
     ),
+    ("speaker", ["echo", "alexa", "google-home", "googlehome", "homepod", "sonos", "speaker"]),
+    ("console", ["playstation", r"\bps[345]\b", r"\bxbox\b", "nintendo", "steamdeck", "steam-deck"]),
+    ("camera", ["camera", "cam-", "doorbell", "nestcam", "nest-cam", r"^ring-"]),
     (
         "iot",
         [
-            "echo",
-            "alexa",
-            "google-home",
             "nest",
             "smartplug",
             "smart-plug",
@@ -45,9 +46,6 @@ _HOSTNAME_RULES = [
             "tasmota",
             "esp_",
             "esp-",
-            "camera",
-            "cam-",
-            "doorbell",
             "sensor",
             "thermostat",
             "hue-",
@@ -103,9 +101,10 @@ def guess_device_type(hostname: str | None, vendor: str | None) -> str:
             if _matches_any(lower_vendor, patterns):
                 return device_type
         if "apple" in lower_vendor:
-            # Apple's OUI covers phones, laptops and more with no reliable
-            # way to tell apart from the MAC/vendor alone — leave it to the
-            # hostname rules above, or unknown for the user to label by hand.
+            # Apple's OUI covers phones, laptops, watches and more with no
+            # reliable way to tell apart from the MAC/vendor alone — leave
+            # it to the hostname rules above, or unknown for the user to
+            # label by hand.
             return "unknown"
 
     return "unknown"

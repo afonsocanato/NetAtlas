@@ -48,6 +48,14 @@ function BuildingIcon() {
   );
 }
 
+function BluetoothIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6.5 6.5 17.5 17.5 12 22V2l5.5 5.5L6.5 18.5" />
+    </svg>
+  );
+}
+
 function ClockIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -101,6 +109,13 @@ export const DeviceDetails = forwardRef(function DeviceDetails({ device, onClose
           <span className="ns-field__label">Hostname</span>
           <span className="ns-field__value">{device.hostname ?? '—'}</span>
         </div>
+        {device.bleName && (
+          <div className="ns-field">
+            <BluetoothIcon />
+            <span className="ns-field__label">Bluetooth</span>
+            <span className="ns-field__value">{device.bleName}</span>
+          </div>
+        )}
         <div className="ns-field">
           <BuildingIcon />
           <span className="ns-field__label">Vendor</span>
@@ -132,6 +147,10 @@ export const DeviceDetails = forwardRef(function DeviceDetails({ device, onClose
             <option value="phone">Phone</option>
             <option value="tv">TV</option>
             <option value="iot">IoT</option>
+            <option value="watch">Watch</option>
+            <option value="speaker">Speaker</option>
+            <option value="console">Console</option>
+            <option value="camera">Camera</option>
           </select>
         </label>
         <button type="submit" className="ns-primary" disabled={saving}>

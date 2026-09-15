@@ -44,6 +44,9 @@ export function Topbar({
   onTypeFilterChange,
   onRefresh,
   refreshing,
+  networks = [],
+  networkId,
+  onNetworkChange,
 }) {
   const { theme, toggleTheme } = useTheme();
 
@@ -64,6 +67,24 @@ export function Topbar({
         />
       </div>
 
+      {networks.length > 1 && (
+        <div className="ns-filters">
+          <select
+            value={networkId ?? ''}
+            onChange={(e) => onNetworkChange(e.target.value || null)}
+            aria-label="Switch network"
+            title="Which network's devices to show"
+          >
+            <option value="">Auto (this network)</option>
+            {networks.map((n) => (
+              <option key={n.id} value={n.id}>
+                {n.name || n.id}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <div className="ns-filters">
         <select value={statusFilter} onChange={(e) => onStatusFilterChange(e.target.value)} aria-label="Filter by status">
           <option value="">All statuses</option>
@@ -77,6 +98,10 @@ export function Topbar({
           <option value="phone">Phone</option>
           <option value="tv">TV</option>
           <option value="iot">IoT</option>
+          <option value="watch">Watch</option>
+          <option value="speaker">Speaker</option>
+          <option value="console">Console</option>
+          <option value="camera">Camera</option>
           <option value="unknown">Unknown</option>
         </select>
       </div>

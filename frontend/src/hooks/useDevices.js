@@ -2,29 +2,32 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api/client.js';
 import { getSocket } from '../api/socket.js';
 
-export function useDevices() {
+export function useDevices(networkId) {
   const [devices, setDevices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const refresh = useCallback(async (params) => {
-    try {
-      const data = await api.getDevices(params);
-      setDevices(data);
-      setError(null);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const refresh = useCallback(
+    async (params) => {
+      try {
+        const data = await api.getDevices({ ...params, networkId });
+        setDevices(data);
+        setError(null);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [networkId],
+  );
 
   useEffect(() => {
     refresh();
   }, [refresh]);
 
   useEffect(() => {
-    const socket = getSocket();
+    const socket = getSocket(networkId);
 
     const upsert = (device) => {
       setDevices((prev) => {
@@ -49,7 +52,7 @@ export function useDevices() {
       socket.off('device:updated', upsert);
       socket.off('device:offline', onOffline);
     };
-  }, []);
+  }, [networkId]);
 
   return { devices, loading, error, refresh };
 }

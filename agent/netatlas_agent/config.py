@@ -11,6 +11,8 @@ class Config:
     scan_interval_seconds: int = int(os.environ.get("NETATLAS_SCAN_INTERVAL", "60"))
     active_probe: bool = os.environ.get("NETATLAS_ACTIVE_PROBE", "false").lower() == "true"
     resolve_hostnames: bool = os.environ.get("NETATLAS_RESOLVE_HOSTNAMES", "true").lower() == "true"
+    ble_scan: bool = os.environ.get("NETATLAS_BLE_SCAN", "true").lower() == "true"
+    ble_scan_seconds: float = float(os.environ.get("NETATLAS_BLE_SCAN_SECONDS", "5"))
 
 
 config = Config()

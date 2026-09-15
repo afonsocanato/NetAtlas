@@ -29,9 +29,15 @@ The backend auto-generates this key on first boot if `AGENT_API_KEY` isn't set o
 | `NETATLAS_SCAN_INTERVAL`     | `60`                              | Seconds between discovery cycles                        |
 | `NETATLAS_ACTIVE_PROBE`      | `false`                          | Enable the opt-in ping sweep to warm the ARP cache       |
 | `NETATLAS_RESOLVE_HOSTNAMES` | `true`                           | Reverse-DNS lookups per host (slower, best-effort)       |
+| `NETATLAS_BLE_SCAN`          | `true`                           | Scan nearby BLE advertisements to fill in device names   |
+| `NETATLAS_BLE_SCAN_SECONDS`  | `5`                               | How long each BLE scan window lasts, per cycle           |
 
 ## Notes
 
 - Passive-only mode (`NETATLAS_ACTIVE_PROBE=false`) never sends any packet — it only reads the OS's existing ARP cache. It may miss idle devices; enable active probe for a fuller picture at the cost of a light ping sweep.
 - The bundled `oui_data/sample_oui.json` is a tiny example table. For real vendor coverage, download the full IEEE OUI list (link in that file) and drop it in the same location/format.
+- BLE scanning needs a Bluetooth adapter and OS permission for whatever runs the agent:
+  - **macOS**: the first scan triggers a system Bluetooth permission prompt — it needs an interactive GUI session to show up (a headless/SSH/launchd-before-login context won't see it, and the scan silently no-ops instead). If it was denied, re-grant it in System Settings → Privacy & Security → Bluetooth.
+  - **Linux**: the user running the agent typically needs to be in the `bluetooth` group (or run as root).
+  - Whenever the adapter/permission isn't available, or `bleak` isn't installed, BLE scanning just contributes nothing that cycle — set `NETATLAS_BLE_SCAN=false` to turn it off outright. See [discovery/ble_match.py](netatlas_agent/discovery/ble_match.py) for why a BLE name is only ever a best-effort, heuristically-matched guess, never a certain identification.
 - See [../docs/LIMITATIONS.md](../docs/LIMITATIONS.md) for what this agent can and can't see, and why.

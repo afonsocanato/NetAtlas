@@ -40,7 +40,8 @@ export const api = {
   getDevice: (id) => request(`/api/devices/${id}`),
   updateDevice: (id, patch) => request(`/api/devices/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
   deleteDevice: (id) => request(`/api/devices/${id}`, { method: 'DELETE' }),
-  getSummary: () => request('/api/network/summary'),
+  getSummary: (networkId) => request(`/api/network/summary${networkId ? `?networkId=${encodeURIComponent(networkId)}` : ''}`),
+  getNetworks: () => request('/api/networks'),
 };
 
 export { API_URL };

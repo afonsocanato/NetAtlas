@@ -35,4 +35,16 @@ export const networksModel = {
     if (error) throw error;
     return data?.[0]?.id ?? null;
   },
+
+  // Every network that has ever reported — backs the dashboard's manual
+  // network switcher (for viewing a network whose agent isn't on the same
+  // public IP as you right now, e.g. checking home from mobile data).
+  async list() {
+    const { data, error } = await supabase
+      .from('networks')
+      .select('id, name, last_report_at')
+      .order('last_report_at', { ascending: false });
+    if (error) throw error;
+    return data.map((row) => ({ id: row.id, name: row.name, lastReportAt: row.last_report_at }));
+  },
 };

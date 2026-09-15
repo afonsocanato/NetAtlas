@@ -7,6 +7,12 @@ const ICON_PATHS = {
   phone: '<rect x="7.5" y="3" width="9" height="18" rx="2"/><path d="M11 18.5h2"/>',
   tv: '<rect x="3" y="4" width="18" height="12" rx="1"/><path d="M8.5 20l-1.5 2.5M15.5 20l1.5 2.5"/>',
   iot: '<rect x="8" y="8" width="8" height="8" rx="1.5"/><path d="M12 4v4M12 16v4M4 12h4M16 12h4M6.5 6.5l2 2M17.5 6.5l-2 2M6.5 17.5l2-2M17.5 17.5l-2-2"/>',
+  watch: '<rect x="7" y="7" width="10" height="10" rx="3"/><path d="M9.5 7V4.5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V7M9.5 17v2.5a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1V17"/><path d="M17 10.5h1.8v3H17"/>',
+  speaker: '<rect x="7" y="3" width="10" height="18" rx="5"/><circle cx="12" cy="9" r="1.4"/><circle cx="12" cy="13.5" r="1.4"/><circle cx="12" cy="18" r="0.6"/>',
+  console:
+    '<rect x="3" y="9" width="18" height="8" rx="4"/><path d="M7.5 11v4M5.5 13h4"/><circle cx="15.5" cy="12" r="0.9"/><circle cx="17.8" cy="14.2" r="0.9"/>',
+  camera:
+    '<rect x="3" y="7" width="18" height="12" rx="2"/><circle cx="12" cy="13" r="3.3"/><path d="M8.5 7l1.2-2.5h4.6L15.5 7"/>',
   unknown:
     '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.3a2.5 2.5 0 0 1 4.8 1c0 1.6-2.3 1.8-2.3 3.4"/><circle cx="12" cy="16.7" r="0.2"/>',
 };

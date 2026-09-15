@@ -19,14 +19,21 @@ const LAYOUT = {
 
 function toElements(devices) {
   const nodes = devices.map((d) => {
-    const hostLabel = d.customLabel || d.hostname;
-    // No hostname/custom label (common — see docs/LIMITATIONS.md on
-    // reverse-DNS/mDNS failing often) but the MAC's OUI vendor lookup
-    // resolved a brand (e.g. "Apple", "Xiaomi"): show that instead of just
-    // the bare IP. Vendor strings come pre-formatted from the OUI table, so
-    // they skip formatDeviceName (which assumes lowercase hostnames and
-    // would mangle already-correct casing like "TP-LINK").
-    const name = hostLabel ? formatDeviceName(hostLabel) : d.vendor || null;
+    // Priority: manual label > BLE-matched name > hostname > OUI vendor.
+    // bleName comes from a nearby BLE advertisement the agent heuristically
+    // matched to this device (see agent/netatlas_agent/discovery/
+    // ble_match.py) — genuinely identifying (a phone/watch's own broadcast
+    // name) when present, so it outranks hostname (which is often just a
+    // generic DHCP/mDNS label). Neither is guaranteed, so hostname stays as
+    // the fallback, and a bare OUI vendor (e.g. "Apple", "Xiaomi") below
+    // that when neither resolved — better than just the bare IP.
+    const hostLabel = d.customLabel || d.bleName || d.hostname;
+    // Vendor strings come pre-formatted from the OUI table, so they skip
+    // formatDeviceName (which assumes lowercase hostnames and would mangle
+    // already-correct casing like "TP-LINK"). BLE/custom names are
+    // free-typed already-correct text too — only run bare hostnames through
+    // it.
+    const name = hostLabel ? (hostLabel === d.hostname ? formatDeviceName(hostLabel) : hostLabel) : d.vendor || null;
     return {
       data: {
         id: String(d.id),

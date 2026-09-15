@@ -20,7 +20,14 @@ function GraphIcon() {
 }
 
 function Dashboard() {
-  const { devices, loading, error, refresh } = useDevices();
+  // null = auto-detect by the visitor's public IP (see
+  // backend/src/middleware/networkContext.js) — the common case for a
+  // single-network setup. Only set once the user explicitly picks one from
+  // the switcher (shown once there's more than one known network), e.g. to
+  // check a network they're not currently on.
+  const [networkId, setNetworkId] = useState(null);
+  const [networks, setNetworks] = useState([]);
+  const { devices, loading, error, refresh } = useDevices(networkId ?? undefined);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
@@ -30,8 +37,12 @@ function Dashboard() {
   const detailsRef = useRef(null);
 
   useEffect(() => {
-    api.getSummary().then(setSummary).catch(() => {});
-  }, [devices]);
+    api.getSummary(networkId ?? undefined).then(setSummary).catch(() => {});
+  }, [devices, networkId]);
+
+  useEffect(() => {
+    api.getNetworks().then(setNetworks).catch(() => {});
+  }, []);
 
   // Manual refresh: re-fetches devices + summary right away, instead of
   // waiting for the next socket push from the agent's scan interval. Tracked
@@ -41,7 +52,7 @@ function Dashboard() {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      await Promise.all([refresh(), api.getSummary().then(setSummary).catch(() => {})]);
+      await Promise.all([refresh(), api.getSummary(networkId ?? undefined).then(setSummary).catch(() => {})]);
     } finally {
       setRefreshing(false);
     }
@@ -83,6 +94,9 @@ function Dashboard() {
         onTypeFilterChange={setTypeFilter}
         onRefresh={handleRefresh}
         refreshing={refreshing}
+        networks={networks}
+        networkId={networkId}
+        onNetworkChange={setNetworkId}
       />
       <div className="ns-main">
         <Sidebar summary={summary} />

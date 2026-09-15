@@ -25,10 +25,13 @@ export function initSockets(httpServer) {
   });
 
   io.on('connection', async (socket) => {
-    // Same IP-matching used for the REST endpoints (see
-    // middleware/networkContext.js), so live pushes never leak a device
-    // update from one visitor's network into another's dashboard.
-    const networkId = (await networksModel.findByPublicIp(socketClientIp(socket)).catch(() => null)) ?? 'default';
+    // An explicit networkId (from the dashboard's manual network switcher —
+    // see middleware/networkContext.js for the matching REST-side override)
+    // wins; otherwise fall back to the same IP-matching used there, so live
+    // pushes never leak a device update from one visitor's network into
+    // another's dashboard by default.
+    const requested = socket.handshake.auth?.networkId;
+    const networkId = requested || (await networksModel.findByPublicIp(socketClientIp(socket)).catch(() => null)) || 'default';
     socket.join(networkId);
     socket.on('disconnect', () => {});
   });

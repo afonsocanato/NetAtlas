@@ -6,6 +6,7 @@ import { agentRouter } from './routes/agent.js';
 import { healthRouter } from './routes/health.js';
 import { authRouter } from './routes/auth.js';
 import { adminRouter } from './routes/admin.js';
+import { networksRouter } from './routes/networks.js';
 import { deviceController } from './controllers/deviceController.js';
 import { userAuth } from './middleware/userAuth.js';
 import { networkContext } from './middleware/networkContext.js';
@@ -28,6 +29,7 @@ app.use('/api/agent', agentRouter); // own key-based auth, not user login
 
 app.use('/api/devices', userAuth, networkContext, devicesRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/networks', userAuth, networksRouter);
 app.get('/api/network/summary', userAuth, networkContext, asyncHandler(deviceController.summary));
 
 app.use(notFoundHandler);
