@@ -52,7 +52,12 @@ export function App() {
         ) : (
           <NetworkGraph devices={filtered} onSelectDevice={setSelectedId} />
         )}
-        <DeviceDetails device={selectedDevice} onClose={() => setSelectedId(null)} onUpdated={() => {}} />
+        <DeviceDetails
+          key={selectedDevice?.id ?? 'none'}
+          device={selectedDevice}
+          onClose={() => setSelectedId(null)}
+          onUpdated={() => {}}
+        />
       </div>
     </div>
   );
