@@ -4,10 +4,21 @@ Base URL (dev): `http://localhost:4000/api`
 
 ## Auth
 
-- **Agent → Backend**: `X-Api-Key` header, shared secret configured via env var on both sides. MVP only — no user accounts yet.
-- **Frontend → Backend**: open on the local network for MVP. Auth (item 4 in roadmap) will add session-based auth before this is exposed beyond localhost/LAN.
+- **Agent → Backend**: `X-Api-Key` header, a shared secret independent of user login (see `/api/agent/report` below). Auto-generated on first boot if `AGENT_API_KEY` isn't set — view it via `GET /api/admin/agent-key` (requires login) or the server log.
+- **Frontend/user → Backend**: `Authorization: Bearer <token>` header, a JWT obtained from `POST /api/auth/login`. Required by default; can be turned off for a fully trusted LAN-only setup with `NETATLAS_DISABLE_AUTH=true` (never on a publicly reachable deploy — see [DEPLOYMENT.md](DEPLOYMENT.md)). Socket.IO connections authenticate the same token via the handshake's `auth.token`.
+
+### `POST /api/auth/login`
+Body: `{ "username": string, "password": string }`. Response: `{ "token": string, "username": string }`.
+
+### `GET /api/auth/me`
+Requires a valid token. Response: `{ "username": string }`.
+
+### `GET /api/admin/agent-key`
+Requires a valid token. Response: `{ "agentApiKey": string }` — lets a logged-in user copy the current agent key into the agent's config without touching either side's `.env` by hand.
 
 ## REST Endpoints
+
+All endpoints below except `/api/agent/*` and `/api/health` require the `Authorization: Bearer <token>` header described above.
 
 ### `POST /api/agent/report`
 Agent pushes a discovery batch.

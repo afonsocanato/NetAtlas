@@ -1,7 +1,7 @@
 // Populates the database with a plausible fake home network, so the
 // dashboard can be explored/demoed without running the real agent.
 // Run with: npm run seed
-import { db } from './index.js';
+import { supabase } from './index.js';
 import { deviceModel } from '../models/deviceModel.js';
 
 const MOCK_DEVICES = [
@@ -17,17 +17,20 @@ const MOCK_DEVICES = [
   { mac: '08:00:27:00:11:10', ip: '192.168.1.18', hostname: 'test-vm.local', vendor: 'Oracle VirtualBox', deviceType: 'computer', offline: true },
 ];
 
-function reset() {
-  db.exec('DELETE FROM presence_events; DELETE FROM devices;');
+async function reset() {
+  // presence_events cascades from devices, but clear it explicitly too in
+  // case rows exist for devices already removed.
+  await supabase.from('presence_events').delete().not('id', 'is', null);
+  await supabase.from('devices').delete().not('id', 'is', null);
 }
 
-function seed() {
-  reset();
+async function seed() {
+  await reset();
   for (const { offline, ...data } of MOCK_DEVICES) {
-    const device = deviceModel.create(data);
-    if (offline) deviceModel.markOffline(device.id);
+    const device = await deviceModel.create(data);
+    if (offline) await deviceModel.markOffline(device.id);
   }
-  console.log(`Seeded ${MOCK_DEVICES.length} mock devices into ${db.name}`);
+  console.log(`Seeded ${MOCK_DEVICES.length} mock devices into Supabase`);
 }
 
-seed();
+await seed();

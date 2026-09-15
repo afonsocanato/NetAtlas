@@ -3,7 +3,7 @@ import { config } from '../config/index.js';
 import { emitDeviceNew, emitDeviceUpdated, emitDeviceOffline, emitScanComplete } from '../sockets/index.js';
 
 export const deviceService = {
-  ingestReport({ network, devices }) {
+  async ingestReport({ network, devices }) {
     const networkId = network?.id ?? 'default';
     const seenIds = [];
     let created = 0;
@@ -11,10 +11,10 @@ export const deviceService = {
 
     for (const d of devices) {
       const mac = d.mac ? d.mac.toUpperCase() : null;
-      const existing = deviceModel.findByMacOrIp({ networkId, mac, ip: d.ip });
+      const existing = await deviceModel.findByMacOrIp({ networkId, mac, ip: d.ip });
 
       if (!existing) {
-        const device = deviceModel.create({
+        const device = await deviceModel.create({
           networkId,
           mac,
           ip: d.ip,
@@ -27,7 +27,7 @@ export const deviceService = {
         created += 1;
         emitDeviceNew(device);
       } else {
-        const device = deviceModel.markSeen(existing.id, {
+        const device = await deviceModel.markSeen(existing.id, {
           ip: d.ip,
           hostname: d.hostname,
           vendor: d.vendor,
@@ -38,7 +38,7 @@ export const deviceService = {
       }
     }
 
-    this.reconcileOffline(networkId, seenIds);
+    await this.reconcileOffline(networkId, seenIds);
     emitScanComplete({ scannedAt: new Date().toISOString(), deviceCount: seenIds.length });
 
     return { received: devices.length, new: created, updated };
@@ -46,12 +46,12 @@ export const deviceService = {
 
   // Devices not present in this report get their missed-report counter bumped;
   // once it crosses the configured threshold they flip to offline.
-  reconcileOffline(networkId, seenIds) {
-    const missingIds = deviceModel.idsNotIn(networkId, seenIds);
+  async reconcileOffline(networkId, seenIds) {
+    const missingIds = await deviceModel.idsNotIn(networkId, seenIds);
     for (const id of missingIds) {
-      const missedReports = deviceModel.markMissing(id);
+      const missedReports = await deviceModel.markMissing(id);
       if (missedReports >= config.offlineAfterMissedReports) {
-        const device = deviceModel.markOffline(id);
+        const device = await deviceModel.markOffline(id);
         emitDeviceOffline(device);
       }
     }

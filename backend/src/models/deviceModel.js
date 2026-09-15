@@ -1,4 +1,4 @@
-import { db } from '../db/index.js';
+import { supabase } from '../db/index.js';
 
 function toCamel(row) {
   if (!row) return row;
@@ -20,131 +20,120 @@ function toCamel(row) {
   };
 }
 
+function must(result) {
+  if (result.error) throw result.error;
+  return result.data;
+}
+
 export const deviceModel = {
-  findAll({ status, vendor, deviceType, q, networkId = 'default' } = {}) {
-    let sql = 'SELECT * FROM devices WHERE network_id = ?';
-    const params = [networkId];
+  async findAll({ status, vendor, deviceType, q, networkId = 'default' } = {}) {
+    let query = supabase.from('devices').select('*').eq('network_id', networkId);
 
-    if (status) {
-      sql += ' AND status = ?';
-      params.push(status);
-    }
-    if (vendor) {
-      sql += ' AND vendor = ?';
-      params.push(vendor);
-    }
-    if (deviceType) {
-      sql += ' AND device_type = ?';
-      params.push(deviceType);
-    }
+    if (status) query = query.eq('status', status);
+    if (vendor) query = query.eq('vendor', vendor);
+    if (deviceType) query = query.eq('device_type', deviceType);
     if (q) {
-      sql += ' AND (ip LIKE ? OR hostname LIKE ? OR mac LIKE ? OR custom_label LIKE ?)';
       const like = `%${q}%`;
-      params.push(like, like, like, like);
+      query = query.or(`ip.ilike.${like},hostname.ilike.${like},mac.ilike.${like},custom_label.ilike.${like}`);
     }
-    sql += ' ORDER BY is_router DESC, last_seen DESC';
 
-    return db.prepare(sql).all(...params).map(toCamel);
+    query = query.order('is_router', { ascending: false }).order('last_seen', { ascending: false });
+
+    const data = must(await query);
+    return data.map(toCamel);
   },
 
-  findById(id) {
-    return toCamel(db.prepare('SELECT * FROM devices WHERE id = ?').get(id));
+  async findById(id) {
+    const { data, error } = await supabase.from('devices').select('*').eq('id', id).maybeSingle();
+    if (error) throw error;
+    return toCamel(data);
   },
 
-  findByMacOrIp({ networkId, mac, ip }) {
-    if (mac) {
-      return db.prepare('SELECT * FROM devices WHERE network_id = ? AND mac = ?').get(networkId, mac);
+  async findByMacOrIp({ networkId, mac, ip }) {
+    let query = supabase.from('devices').select('*').eq('network_id', networkId);
+    query = mac ? query.eq('mac', mac) : query.eq('ip', ip).is('mac', null);
+    const { data, error } = await query.maybeSingle();
+    if (error) throw error;
+    return data;
+  },
+
+  async create(device) {
+    const now = new Date().toISOString();
+    const row = must(
+      await supabase
+        .from('devices')
+        .insert({
+          network_id: device.networkId ?? 'default',
+          mac: device.mac ?? null,
+          ip: device.ip ?? null,
+          hostname: device.hostname ?? null,
+          vendor: device.vendor ?? null,
+          device_type: device.deviceType ?? 'unknown',
+          status: 'online',
+          is_router: Boolean(device.isRouter),
+          first_seen: now,
+          last_seen: now,
+        })
+        .select()
+        .single(),
+    );
+    return toCamel(row);
+  },
+
+  async markSeen(id, { ip, hostname, vendor }) {
+    const patch = { status: 'online', missed_reports: 0, last_seen: new Date().toISOString() };
+    if (ip != null) patch.ip = ip;
+    if (hostname != null) patch.hostname = hostname;
+    if (vendor != null) patch.vendor = vendor;
+
+    const row = must(await supabase.from('devices').update(patch).eq('id', id).select().single());
+    return toCamel(row);
+  },
+
+  async markMissing(id) {
+    const current = must(await supabase.from('devices').select('missed_reports').eq('id', id).single());
+    const missedReports = (current?.missed_reports ?? 0) + 1;
+    must(await supabase.from('devices').update({ missed_reports: missedReports }).eq('id', id));
+    return missedReports;
+  },
+
+  async markOffline(id) {
+    const row = must(await supabase.from('devices').update({ status: 'offline' }).eq('id', id).select().single());
+    return toCamel(row);
+  },
+
+  async update(id, { customLabel, deviceType }) {
+    const patch = {};
+    if (customLabel != null) patch.custom_label = customLabel;
+    if (deviceType != null) patch.device_type = deviceType;
+
+    const row = must(await supabase.from('devices').update(patch).eq('id', id).select().single());
+    return toCamel(row);
+  },
+
+  async remove(id) {
+    must(await supabase.from('devices').delete().eq('id', id));
+  },
+
+  async idsNotIn(networkId, seenIds) {
+    let query = supabase.from('devices').select('id').eq('network_id', networkId).eq('status', 'online');
+    if (seenIds.length > 0) query = query.not('id', 'in', `(${seenIds.join(',')})`);
+    const data = must(await query);
+    return data.map((r) => r.id);
+  },
+
+  async summary(networkId = 'default') {
+    const data = must(await supabase.from('devices').select('status, device_type, vendor').eq('network_id', networkId));
+
+    const total = data.length;
+    const online = data.filter((d) => d.status === 'online').length;
+    const byType = {};
+    const byVendor = {};
+    for (const d of data) {
+      byType[d.device_type] = (byType[d.device_type] ?? 0) + 1;
+      if (d.vendor) byVendor[d.vendor] = (byVendor[d.vendor] ?? 0) + 1;
     }
-    return db.prepare('SELECT * FROM devices WHERE network_id = ? AND ip = ? AND mac IS NULL').get(networkId, ip);
-  },
 
-  create(device) {
-    const stmt = db.prepare(`
-      INSERT INTO devices (network_id, mac, ip, hostname, vendor, device_type, status, is_router, first_seen, last_seen)
-      VALUES (@networkId, @mac, @ip, @hostname, @vendor, @deviceType, 'online', @isRouter, datetime('now'), datetime('now'))
-    `);
-    const info = stmt.run({
-      networkId: device.networkId ?? 'default',
-      mac: device.mac ?? null,
-      ip: device.ip ?? null,
-      hostname: device.hostname ?? null,
-      vendor: device.vendor ?? null,
-      deviceType: device.deviceType ?? 'unknown',
-      isRouter: device.isRouter ? 1 : 0,
-    });
-    return this.findById(info.lastInsertRowid);
-  },
-
-  markSeen(id, { ip, hostname, vendor }) {
-    db.prepare(`
-      UPDATE devices
-      SET ip = COALESCE(?, ip),
-          hostname = COALESCE(?, hostname),
-          vendor = COALESCE(?, vendor),
-          status = 'online',
-          missed_reports = 0,
-          last_seen = datetime('now'),
-          updated_at = datetime('now')
-      WHERE id = ?
-    `).run(ip ?? null, hostname ?? null, vendor ?? null, id);
-    return this.findById(id);
-  },
-
-  markMissing(id) {
-    db.prepare(`
-      UPDATE devices SET missed_reports = missed_reports + 1, updated_at = datetime('now') WHERE id = ?
-    `).run(id);
-    return db.prepare('SELECT missed_reports FROM devices WHERE id = ?').get(id)?.missed_reports ?? 0;
-  },
-
-  markOffline(id) {
-    db.prepare(`
-      UPDATE devices SET status = 'offline', updated_at = datetime('now') WHERE id = ?
-    `).run(id);
-    return this.findById(id);
-  },
-
-  update(id, { customLabel, deviceType }) {
-    db.prepare(`
-      UPDATE devices
-      SET custom_label = COALESCE(?, custom_label),
-          device_type = COALESCE(?, device_type),
-          updated_at = datetime('now')
-      WHERE id = ?
-    `).run(customLabel ?? null, deviceType ?? null, id);
-    return this.findById(id);
-  },
-
-  remove(id) {
-    db.prepare('DELETE FROM devices WHERE id = ?').run(id);
-  },
-
-  idsNotIn(networkId, seenIds) {
-    if (seenIds.length === 0) {
-      return db.prepare("SELECT id FROM devices WHERE network_id = ? AND status = 'online'").all(networkId).map((r) => r.id);
-    }
-    const placeholders = seenIds.map(() => '?').join(',');
-    return db
-      .prepare(`SELECT id FROM devices WHERE network_id = ? AND status = 'online' AND id NOT IN (${placeholders})`)
-      .all(networkId, ...seenIds)
-      .map((r) => r.id);
-  },
-
-  summary(networkId = 'default') {
-    const total = db.prepare('SELECT COUNT(*) c FROM devices WHERE network_id = ?').get(networkId).c;
-    const online = db.prepare("SELECT COUNT(*) c FROM devices WHERE network_id = ? AND status = 'online'").get(networkId).c;
-    const byType = db
-      .prepare('SELECT device_type type, COUNT(*) count FROM devices WHERE network_id = ? GROUP BY device_type')
-      .all(networkId);
-    const byVendor = db
-      .prepare('SELECT vendor, COUNT(*) count FROM devices WHERE network_id = ? AND vendor IS NOT NULL GROUP BY vendor')
-      .all(networkId);
-    return {
-      total,
-      online,
-      offline: total - online,
-      byType: Object.fromEntries(byType.map((r) => [r.type, r.count])),
-      byVendor: Object.fromEntries(byVendor.map((r) => [r.vendor, r.count])),
-    };
+    return { total, online, offline: total - online, byType, byVendor };
   },
 };

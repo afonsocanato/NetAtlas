@@ -1,11 +1,18 @@
 import { Server } from 'socket.io';
 import { config } from '../config/index.js';
+import { verifySocketToken } from '../middleware/userAuth.js';
 
 let io;
 
 export function initSockets(httpServer) {
   io = new Server(httpServer, {
     cors: { origin: config.corsOrigin },
+  });
+
+  io.use((socket, next) => {
+    const token = socket.handshake.auth?.token;
+    if (!verifySocketToken(token)) return next(new Error('UNAUTHORIZED'));
+    next();
   });
 
   io.on('connection', (socket) => {

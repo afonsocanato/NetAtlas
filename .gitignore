@@ -14,13 +14,6 @@ venv/
 .env
 .env.local
 
-# DB
-*.sqlite
-*.sqlite3
-*.sqlite-shm
-*.sqlite-wal
-backend/data/
-
 # OS
 .DS_Store
 

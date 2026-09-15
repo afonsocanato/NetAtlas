@@ -86,11 +86,11 @@ body {
      dark panel would make half the wordmark unreadable. */
   background: #ffffff;
   border-radius: var(--ns-radius);
-  padding: 6px 14px;
+  padding: 4px 14px;
 }
 
 .ns-brand__logo {
-  height: 40px;
+  height: 44px;
   width: auto;
   display: block;
 }
@@ -539,4 +539,148 @@ button.ns-primary:disabled {
     border-left: none;
     border-top: 1px solid var(--ns-border);
   }
+}
+
+/* Login */
+
+.ns-login {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ns-bg);
+  padding: 16px;
+}
+
+.ns-login__card {
+  width: 100%;
+  max-width: 340px;
+  background: var(--ns-panel);
+  border: 1px solid var(--ns-border);
+  border-radius: var(--ns-radius-lg);
+  box-shadow: var(--ns-shadow);
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ns-login__logo {
+  height: 48px;
+  width: auto;
+  align-self: center;
+  margin-bottom: 4px;
+}
+
+.ns-login__hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ns-muted);
+  text-align: center;
+  line-height: 1.5;
+}
+
+.ns-login__error {
+  font-size: 13px;
+  color: var(--ns-offline);
+}
+
+.ns-login label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ns-muted);
+}
+
+.ns-login input {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+}
+
+.ns-login button.ns-primary {
+  margin-top: 4px;
+}
+
+/* Settings modal */
+
+.ns-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 16px;
+}
+
+.ns-modal {
+  width: 100%;
+  max-width: 420px;
+  max-height: 85vh;
+  overflow-y: auto;
+  background: var(--ns-panel);
+  border: 1px solid var(--ns-border);
+  border-radius: var(--ns-radius-lg);
+  box-shadow: var(--ns-shadow);
+  padding: 20px 24px 24px;
+  position: relative;
+}
+
+.ns-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.ns-modal__header h2 {
+  font-size: 16px;
+  margin: 0;
+}
+
+.ns-modal h3 {
+  font-size: 13px;
+  margin: 18px 0 4px;
+}
+
+.ns-modal label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ns-muted);
+  margin-top: 12px;
+}
+
+.ns-modal input {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 12px;
+}
+
+.ns-modal button {
+  margin-top: 10px;
+}
+
+.ns-modal__divider {
+  border: none;
+  border-top: 1px solid var(--ns-border);
+  margin: 20px 0 4px;
+}
+
+.ns-muted-text {
+  font-size: 13px;
+  color: var(--ns-muted);
+  line-height: 1.5;
+}
+
+.ns-muted-text code {
+  background: var(--ns-panel-2);
+  border: 1px solid var(--ns-border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 12px;
 }

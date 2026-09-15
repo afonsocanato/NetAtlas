@@ -1,8 +1,11 @@
 import http from 'node:http';
 import { app } from './app.js';
 import { initSockets } from './sockets/index.js';
+import { initSecrets } from './security/secrets.js';
 import { config } from './config/index.js';
 import { logger } from './utils/logger.js';
+
+await initSecrets();
 
 const server = http.createServer(app);
 initSockets(server);

@@ -1,24 +1,15 @@
-import Database from 'better-sqlite3';
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { createClient } from '@supabase/supabase-js';
 import { config } from '../config/index.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-fs.mkdirSync(path.dirname(config.dbPath), { recursive: true });
-
-export const db = new Database(config.dbPath);
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
-
-function runMigrations() {
-  const migrationsDir = path.join(__dirname, 'migrations');
-  const files = fs.readdirSync(migrationsDir).filter((f) => f.endsWith('.sql')).sort();
-  for (const file of files) {
-    const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
-    db.exec(sql);
-  }
+if (!config.supabaseUrl || !config.supabaseServiceRoleKey) {
+  throw new Error(
+    'Missing SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY. Copy backend/.env.example to backend/.env, fill them in from ' +
+      'your Supabase project (Settings -> API), and run backend/supabase/schema.sql once in the SQL Editor.',
+  );
 }
 
-runMigrations();
+// Server-side client only — the service role key bypasses Row Level
+// Security, which is why it must never reach the frontend or agent.
+export const supabase = createClient(config.supabaseUrl, config.supabaseServiceRoleKey, {
+  auth: { persistSession: false },
+});

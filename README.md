@@ -2,7 +2,7 @@
 
 NetAtlas maps the devices on your own local network in real time and shows them as an interactive graph — router at the center, every computer, phone, TV and IoT device around it, with IP, hostname, MAC address, vendor and online/offline status at a glance.
 
-It's split into three independent pieces that only ever talk over HTTP/WebSocket: a **Python discovery agent** that runs on your machine and reads what your OS already knows about the network (ARP tables, optionally a light ping sweep), a **Node.js/Express backend** that stores and reconciles that data in SQLite and pushes live updates, and a **React + Cytoscape.js dashboard** that renders it.
+It's split into three independent pieces that only ever talk over HTTP/WebSocket: a **Python discovery agent** that runs on your machine and reads what your OS already knows about the network (ARP tables, optionally a light ping sweep), a **Node.js/Express backend** that stores and reconciles that data in Supabase (Postgres) and pushes live updates, and a **React + Cytoscape.js dashboard** that renders it.
 
 NetAtlas only discovers hosts, never scans for open ports or exploits anything, and is meant to be pointed only at networks you own or administer. See [docs/LIMITATIONS.md](docs/LIMITATIONS.md) for the full scope/ethics boundaries and technical caveats.
 
@@ -22,11 +22,11 @@ Most home network tools either live inside a router's clunky admin UI or require
 
 **Backend**
 - REST API for devices, filters (status/vendor/type/search) and network summary stats
-- SQLite storage with automatic migrations on boot
+- Supabase (Postgres) storage — schema managed via a single SQL file you run once in the Supabase SQL Editor
 - Upsert-by-MAC (falls back to IP when no MAC is available) so device history survives across scans
 - Online → offline transition only after N consecutive missed reports, to absorb transient Wi-Fi drops
 - Real-time push over Socket.IO (`device:new`, `device:updated`, `device:offline`, `scan:complete`)
-- Simple shared-secret auth between agent and backend
+- Login required by default (single admin account, JWT sessions) — zero-config: a random admin login and agent API key are generated on first boot if you don't set your own, so the dashboard is safe to put behind a real domain from day one (see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md))
 
 **Dashboard (frontend)**
 - Force/concentric graph of the network via Cytoscape.js, router at the center
@@ -35,26 +35,31 @@ Most home network tools either live inside a router's clunky admin UI or require
 - Live search by IP/hostname/MAC, plus status/type filters
 - Dark mode (persisted per-browser)
 - Live updates over WebSocket — no manual refresh needed
+- Settings panel that surfaces the agent's backend URL + API key ready to copy, so pairing a new agent never means hand-editing two `.env` files to keep a secret in sync
 
 ## Architecture
 
 ```
 Python discovery agent  --REST-->  Node.js/Express backend  --WebSocket-->  React + Cytoscape dashboard
-   (runs on your LAN)              (SQLite storage, Socket.IO)                (graph visualization)
+   (runs on your LAN)              (Supabase storage, Socket.IO)               (graph visualization)
 ```
 
 Each component can be redeployed or rewritten independently as long as the REST/WebSocket contract holds — the agent never touches the database, and the frontend never touches the network directly (browsers can't do raw sockets/ARP anyway).
 
-Full write-ups: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (data flow, component boundaries, deployment model), [docs/DATABASE.md](docs/DATABASE.md) (schema), [docs/API.md](docs/API.md) (REST + WebSocket contract), [docs/LIMITATIONS.md](docs/LIMITATIONS.md) (what discovery can and can't see, and why), [docs/ROADMAP.md](docs/ROADMAP.md) (phased plan).
+Full write-ups: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (data flow, component boundaries, deployment model), [docs/DATABASE.md](docs/DATABASE.md) (schema), [docs/API.md](docs/API.md) (REST + WebSocket contract), [docs/LIMITATIONS.md](docs/LIMITATIONS.md) (what discovery can and can't see, and why), [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) (putting it behind your own domain with HTTPS), [docs/ROADMAP.md](docs/ROADMAP.md) (phased plan).
 
 ## Quickstart
 
-Requires Node.js ≥ 18 and Python ≥ 3.10. Run each numbered step in its own terminal tab.
+Requires Node.js ≥ 18, Python ≥ 3.10, and a free [Supabase](https://supabase.com) project.
+
+**Before step 1**: in your Supabase project's SQL Editor, run [backend/supabase/schema.sql](backend/supabase/schema.sql) once, then copy the **Project URL** and **`service_role` key** from Settings → API — you'll paste them into `backend/.env` below.
+
+Run each numbered step in its own terminal tab.
 
 ### macOS / Linux
 
 ```bash
-# 1. Backend
+# 1. Backend — fill in SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env before `npm run dev`
 cd backend && cp .env.example .env && npm install && npm run dev
 ```
 
@@ -64,17 +69,18 @@ cd frontend && cp .env.example .env && npm install && npm run dev
 ```
 
 ```bash
-# 3. Discovery agent (new terminal) — NETATLAS_API_KEY must match backend's AGENT_API_KEY
+# 3. Discovery agent (new terminal) — NETATLAS_API_KEY must match the backend's
+# agent key (see "First login" below for where to find it)
 cd agent
 python3 -m venv .venv && source .venv/bin/activate
 pip3 install -r requirements.txt
-NETATLAS_API_KEY=change-me-to-a-random-secret python3 -m netatlas_agent.main
+NETATLAS_API_KEY=<paste the key from step 1's log, or the Settings panel> python3 -m netatlas_agent.main
 ```
 
 ### Windows (PowerShell)
 
 ```powershell
-# 1. Backend
+# 1. Backend — fill in SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env before `npm run dev`
 cd backend; Copy-Item .env.example .env; npm install; npm run dev
 ```
 
@@ -85,17 +91,30 @@ cd frontend; Copy-Item .env.example .env; npm install; npm run dev
 
 ```powershell
 # 3. Discovery agent (new terminal, run as Administrator for full ARP access) —
-# NETATLAS_API_KEY must match backend's AGENT_API_KEY
+# NETATLAS_API_KEY must match the backend's agent key (see "First login" below)
 cd agent
 python -m venv .venv; .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-$env:NETATLAS_API_KEY = "change-me-to-a-random-secret"
+$env:NETATLAS_API_KEY = "<paste the key from step 1's log, or the Settings panel>"
 python -m netatlas_agent.main
 ```
 
 > On Windows, if `.venv\Scripts\Activate.ps1` is blocked, run PowerShell as Administrator once and execute `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, then retry.
 
-Open `http://localhost:5173` — devices discovered by the agent appear on the graph as they're reported, live.
+### First login
+
+Open `http://localhost:5173` — you'll land on a login screen. Nothing to configure: step 1's terminal printed a one-time admin username/password and an agent API key when the backend first booted, e.g.:
+
+```
+No ADMIN_USERNAME/ADMIN_PASSWORD set — generated a login:
+  username: admin
+  password: ece0beffd1c7bfd7da
+Generated agent API key (no AGENT_API_KEY set): 8f2a9c...
+```
+
+Log in with that, then either paste the printed agent key into step 3, or grab it anytime from the gear icon in the dashboard's top bar. Devices discovered by the agent appear on the graph as they're reported, live.
+
+To pin your own credentials instead of the generated ones, set `ADMIN_USERNAME`/`ADMIN_PASSWORD`/`AGENT_API_KEY` in `backend/.env` before first boot.
 
 ### No agent handy? Seed some demo data
 
@@ -108,11 +127,13 @@ Populates the database with ~10 plausible fake devices (router, laptop, phones, 
 
 ### Or run it all with Docker Compose
 
+Create a `.env` next to `docker-compose.yml` with your Supabase project's `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (compose reads it automatically), then:
+
 ```bash
 docker compose up --build
 ```
 
-Builds and starts the backend (pre-seeded with the same mock data) and the frontend, wired together — `http://localhost:5173` is ready with no manual setup. The discovery agent is intentionally not containerized (it needs direct access to the host's ARP table/LAN); run it on the host as in step 3 above.
+Builds and starts the backend (pre-seeded with the same mock data) and the frontend, wired together — `http://localhost:5173` is ready. The discovery agent is intentionally not containerized (it needs direct access to the host's ARP table/LAN); run it on the host as in step 3 above.
 
 ## Tests
 
@@ -121,7 +142,7 @@ cd backend
 npm test
 ```
 
-Backend unit tests run on Node's built-in test runner against an isolated in-memory database — see [backend/README.md](backend/README.md#tests).
+Backend unit tests run on Node's built-in test runner **against your configured Supabase project** (there's no local/in-memory database) — see [backend/README.md#tests](backend/README.md#tests) for how they stay isolated from your real data.
 
 ## Project structure
 
@@ -132,11 +153,13 @@ NetAtlas/
 │       ├── discovery/   # network.py, arp_scan.py, icmp_scan.py, hostname.py, oui.py
 │       ├── client.py    # reports batches to the backend
 │       └── main.py      # discovery loop entrypoint
-├── backend/    # Node.js/Express API, SQLite storage, Socket.IO real-time layer
+├── backend/    # Node.js/Express API, Supabase (Postgres) storage, Socket.IO real-time layer
+│   ├── supabase/schema.sql  # run once in the Supabase SQL Editor — source of truth for the schema
 │   ├── src/
-│   │   ├── db/          # connection + migrations + seed.js (mock data)
-│   │   ├── models/       # device queries
+│   │   ├── db/          # supabase client + seed.js (mock data)
+│   │   ├── models/       # device + settings queries (Supabase JS client)
 │   │   ├── services/     # ingestion + online/offline reconciliation
+│   │   ├── security/     # secrets.js — auto-generates agent key/JWT secret/admin login on first boot
 │   │   ├── controllers/, routes/, middleware/, sockets/
 │   ├── test/             # node:test unit tests
 │   └── Dockerfile
@@ -145,7 +168,9 @@ NetAtlas/
 │   │   ├── components/graph/    # NetworkGraph.jsx
 │   │   ├── components/devices/  # DeviceDetails.jsx
 │   │   ├── components/layout/   # Topbar.jsx, Sidebar.jsx
-│   │   ├── hooks/, api/, context/
+│   │   ├── components/auth/     # LoginPage.jsx
+│   │   ├── components/settings/ # SettingsModal.jsx (agent pairing info)
+│   │   ├── hooks/, api/, context/, auth/
 │   └── Dockerfile
 ├── docker-compose.yml  # one-command backend + frontend demo
 └── docs/       # architecture, API contract, DB schema, limitations, roadmap
@@ -157,15 +182,17 @@ Each component reads its own `.env` (copy the committed `.env.example`):
 
 | Component | Key vars |
 |-----------|----------|
-| `backend` | `PORT`, `DB_PATH`, `AGENT_API_KEY`, `OFFLINE_AFTER_MISSED_REPORTS`, `CORS_ORIGIN` |
+| `backend` | `PORT`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `CORS_ORIGIN`, `OFFLINE_AFTER_MISSED_REPORTS`, `AGENT_API_KEY`\*, `ADMIN_USERNAME`\*, `ADMIN_PASSWORD`\*, `JWT_SECRET`\*, `NETATLAS_DISABLE_AUTH` |
 | `frontend` | `VITE_API_URL` |
 | `agent` | `NETATLAS_BACKEND_URL`, `NETATLAS_API_KEY`, `NETATLAS_SCAN_INTERVAL`, `NETATLAS_ACTIVE_PROBE`, `NETATLAS_RESOLVE_HOSTNAMES` |
+
+\* Optional — auto-generated on first boot if left unset (see [backend/README.md#login](backend/README.md#login)).
 
 Full list with defaults in each component's own README ([backend](backend/README.md), [frontend](frontend/README.md), [agent](agent/README.md)).
 
 ## Status & roadmap
 
-Early-stage MVP — discovery, storage, real-time sync and the graph dashboard are working end-to-end, with backend tests, a mock-data seed script and Docker Compose in place. Not yet built: presence history, new-device alerts, multi-network support, export, PWA, and authentication. See [docs/ROADMAP.md](docs/ROADMAP.md) for the phased plan.
+Early-stage MVP — discovery, storage, real-time sync, the graph dashboard, login and a custom-domain deployment path are all working end-to-end, with backend tests, a mock-data seed script and Docker Compose in place. Not yet built: presence history, new-device alerts, multi-network support, export, and PWA. See [docs/ROADMAP.md](docs/ROADMAP.md) for the phased plan.
 
 ## License
 

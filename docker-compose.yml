@@ -3,6 +3,11 @@
 # The discovery agent is intentionally NOT containerized here — it needs
 # direct access to the host's network stack (ARP table, real LAN), which
 # containers don't provide by default. Run it on the host: see agent/README.md.
+#
+# Requires a Supabase project: run backend/supabase/schema.sql once in its
+# SQL Editor, then put SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in a `.env`
+# file next to this one (docker compose reads it automatically) — see
+# backend/README.md for where to find those values.
 services:
   backend:
     build: ./backend
@@ -10,12 +15,18 @@ services:
       - "4000:4000"
     environment:
       PORT: 4000
-      DB_PATH: /app/data/netatlas.sqlite
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
       AGENT_API_KEY: change-me-to-a-random-secret
       OFFLINE_AFTER_MISSED_REPORTS: 2
       CORS_ORIGIN: http://localhost:5173
-    volumes:
-      - netatlas-data:/app/data
+      # Login is on by default — unset, so the backend generates a random
+      # admin username/password on first boot and prints it once to
+      # `docker compose logs backend`. Set both here to pin your own
+      # (recommended before exposing this beyond localhost — see
+      # docs/DEPLOYMENT.md).
+      # ADMIN_USERNAME: admin
+      # ADMIN_PASSWORD: change-me
     command: sh -c "node src/db/seed.js && node src/server.js"
 
   frontend:
@@ -27,6 +38,3 @@ services:
       - "5173:80"
     depends_on:
       - backend
-
-volumes:
-  netatlas-data:

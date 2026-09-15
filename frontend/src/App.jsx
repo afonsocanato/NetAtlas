@@ -3,7 +3,10 @@ import { Topbar } from './components/layout/Topbar.jsx';
 import { Sidebar } from './components/layout/Sidebar.jsx';
 import { NetworkGraph } from './components/graph/NetworkGraph.jsx';
 import { DeviceDetails } from './components/devices/DeviceDetails.jsx';
+import { SettingsModal } from './components/settings/SettingsModal.jsx';
+import { LoginPage } from './components/auth/LoginPage.jsx';
 import { useDevices } from './hooks/useDevices.js';
+import { useAuth } from './context/AuthContext.jsx';
 import { api } from './api/client.js';
 
 function GraphIcon() {
@@ -17,13 +20,14 @@ function GraphIcon() {
   );
 }
 
-export function App() {
+function Dashboard() {
   const { devices, loading, error } = useDevices();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [selectedId, setSelectedId] = useState(null);
   const [summary, setSummary] = useState(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     api.getSummary().then(setSummary).catch(() => {});
@@ -53,6 +57,7 @@ export function App() {
         onStatusFilterChange={setStatusFilter}
         typeFilter={typeFilter}
         onTypeFilterChange={setTypeFilter}
+        onOpenSettings={() => setSettingsOpen(true)}
       />
       <div className="ns-main">
         <Sidebar summary={summary} />
@@ -96,6 +101,22 @@ export function App() {
           />
         )}
       </div>
+
+      {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
     </div>
   );
+}
+
+export function App() {
+  const { isAuthenticated, checking } = useAuth();
+
+  if (checking) {
+    return (
+      <div className="ns-graph-status" style={{ height: '100vh' }}>
+        <div className="ns-spinner" />
+      </div>
+    );
+  }
+
+  return isAuthenticated ? <Dashboard /> : <LoginPage />;
 }

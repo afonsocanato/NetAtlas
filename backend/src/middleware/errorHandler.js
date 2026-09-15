@@ -8,6 +8,14 @@ export class ApiError extends Error {
   }
 }
 
+// Express 4 doesn't forward rejected promises from async handlers to the
+// error middleware on its own — this wrapper does, so a throw/rejection
+// anywhere in an async controller reaches errorHandler() instead of
+// hanging the request or crashing the process.
+export function asyncHandler(fn) {
+  return (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
+}
+
 export function notFoundHandler(req, res) {
   res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Route not found' } });
 }

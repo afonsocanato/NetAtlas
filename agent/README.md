@@ -13,9 +13,11 @@ source .venv/bin/activate  # .venv\Scripts\activate on Windows
 pip3 install -r requirements.txt   # just "pip" on Windows
 
 export NETATLAS_BACKEND_URL=http://localhost:4000
-export NETATLAS_API_KEY=change-me-to-a-random-secret   # must match backend's AGENT_API_KEY
+export NETATLAS_API_KEY=<copy from the dashboard's Settings panel, or the backend's server log>
 python3 -m netatlas_agent.main   # just "python" on Windows
 ```
+
+The backend auto-generates this key on first boot if `AGENT_API_KEY` isn't set on its side — no need to invent one and keep both `.env` files in sync by hand. See [../backend/README.md#login](../backend/README.md#login).
 
 ## Configuration (env vars)
 
