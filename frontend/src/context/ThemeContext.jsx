@@ -3,7 +3,10 @@ import { createContext, useContext, useLayoutEffect, useState } from 'react';
 const ThemeContext = createContext(null);
 
 export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState(() => localStorage.getItem('netatlas-theme') ?? 'dark');
+  // Always starts in light mode — deliberately not restored from
+  // localStorage, so a previous dark-mode toggle doesn't carry over to the
+  // next visit. Toggling still works for the current session.
+  const [theme, setTheme] = useState('light');
 
   // useLayoutEffect (not useEffect) so the data-theme attribute — and the
   // CSS variables that depend on it — are committed before any descendant's
@@ -13,7 +16,6 @@ export function ThemeProvider({ children }) {
   // painting the graph with the previous theme's colors.
   useLayoutEffect(() => {
     document.documentElement.dataset.theme = theme;
-    localStorage.setItem('netatlas-theme', theme);
   }, [theme]);
 
   const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));

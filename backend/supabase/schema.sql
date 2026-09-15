@@ -6,8 +6,16 @@ create table if not exists networks (
   id text primary key,
   name text not null,
   cidr text,
+  -- Public IP last seen reporting into this network (from the agent's own
+  -- request), so the dashboard can auto-detect "which network is this
+  -- visitor's browser on" by matching their public IP against these —
+  -- see src/utils/clientIp.js and src/models/networksModel.js.
+  public_ip text,
+  last_report_at timestamptz,
   created_at timestamptz not null default now()
 );
+
+create index if not exists idx_networks_public_ip on networks (public_ip);
 
 insert into networks (id, name, cidr)
 values ('default', 'Home', null)

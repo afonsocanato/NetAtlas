@@ -61,6 +61,45 @@ The agent only ever makes outbound HTTPS requests to that URL — it doesn't nee
 
 [docker-compose.yml](../docker-compose.yml) still works the same way for local/LAN use. For a public deploy, put Caddy (or your proxy of choice) in front of the `frontend`/`backend` service ports instead of publishing them directly, and set `ADMIN_USERNAME`/`ADMIN_PASSWORD`/`CORS_ORIGIN` via the compose file's `environment:` block rather than relying on the auto-generated first-boot credentials.
 
+## Walkthrough: home Mac + Cloudflare Tunnel
+
+Since your domain's DNS is already on Cloudflare, this is the easiest path — **no port forwarding, no dynamic DNS, works even behind CGNAT**, because the tunnel makes an outbound-only connection from your Mac to Cloudflare's edge; nothing needs to be reachable from the internet on your router. Cloudflare's edge also terminates HTTPS for you. Ready-made config lives in [deploy/](../deploy/) (`caddy` and `cloudflared` binaries downloaded directly, gitignored, no Homebrew/sudo needed).
+
+1. **Authenticate cloudflared with your Cloudflare account**:
+   ```bash
+   ./deploy/cloudflared tunnel login
+   ```
+   Opens a browser — log in and pick the `yourdomain.com` zone to authorize. This saves a cert to `~/.cloudflared/cert.pem`.
+2. **Create the tunnel**:
+   ```bash
+   ./deploy/cloudflared tunnel create netatlas
+   ```
+   Prints a tunnel ID and writes credentials to `~/.cloudflared/<tunnel-id>.json` — note both.
+3. **Route the hostname to it** (creates the DNS CNAME in Cloudflare automatically):
+   ```bash
+   ./deploy/cloudflared tunnel route dns netatlas netatlas.yourdomain.com
+   ```
+4. **Fill in the config**: copy the template so your real IDs stay out of git:
+   ```bash
+   cp deploy/cloudflared-config.yml deploy/cloudflared-config.local.yml
+   ```
+   Edit `deploy/cloudflared-config.local.yml`, replacing `tunnel:` and `credentials-file:` with the values from step 2.
+5. **Point the app at the real domain**:
+   - `backend/.env`: set `CORS_ORIGIN=https://netatlas.yourdomain.com`
+   - `frontend/.env`: set `VITE_API_URL=https://netatlas.yourdomain.com`, then `cd frontend && npm run build` (rebuild required — Vite bakes this in at build time)
+6. **Run all three processes**, from the repo root:
+   ```bash
+   cd backend && npm run dev &                                                    # backend on :4000
+   cd .. && ./deploy/caddy run --config deploy/Caddyfile --adapter caddyfile &     # local router on :8080
+   ./deploy/cloudflared tunnel --config deploy/cloudflared-config.local.yml run    # public edge -> :8080
+   ```
+   Caddy here only routes locally (`/api`, `/socket.io`, static frontend) on plain HTTP — no certificate needed on your end, Cloudflare's edge already handles TLS for the public hostname.
+7. **Visit `https://netatlas.yourdomain.com`** — log in, then update the agent's `NETATLAS_BACKEND_URL` to that same URL (step 4 in the [main Quickstart](../README.md#quickstart)).
+
+Keep the Mac awake (System Settings → Battery/Energy → prevent sleep) and all three processes alive for this to stay reachable. To run unattended across reboots, wrap each in a `launchd` plist (`~/Library/LaunchAgents/`) — same pattern regardless of which process.
+
+**Don't have Cloudflare DNS, or prefer classic port-forwarding instead?** See steps 1–4 further up this doc (DNS `A` record + your own reverse proxy with Let's Encrypt) instead of this section.
+
 ## Security notes
 
 - Never set `NETATLAS_DISABLE_AUTH=true` on anything internet-reachable.

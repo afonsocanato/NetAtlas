@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { forwardRef, useState } from 'react';
 import { api } from '../../api/client.js';
 import { TYPE_COLOR_VAR } from '../../constants/deviceTypes.js';
 
@@ -56,7 +56,7 @@ function ClockIcon() {
   );
 }
 
-export function DeviceDetails({ device, onClose, onUpdated }) {
+export const DeviceDetails = forwardRef(function DeviceDetails({ device, onClose, onUpdated }, ref) {
   const [label, setLabel] = useState(device.customLabel ?? '');
   const [type, setType] = useState(device.deviceType ?? 'unknown');
   const [saving, setSaving] = useState(false);
@@ -72,7 +72,7 @@ export function DeviceDetails({ device, onClose, onUpdated }) {
   };
 
   return (
-    <aside className="ns-details">
+    <aside ref={ref} className="ns-details">
       <button className="ns-details__close" onClick={onClose} aria-label="Close">
         <CloseIcon />
       </button>
@@ -139,4 +139,4 @@ export function DeviceDetails({ device, onClose, onUpdated }) {
       </form>
     </aside>
   );
-}
+});

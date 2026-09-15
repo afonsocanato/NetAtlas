@@ -1,0 +1,12 @@
+# NetAtlas — Cloudflare Tunnel config.
+# Generated mostly by `cloudflared tunnel create` / `route dns` — see
+# docs/DEPLOYMENT.md for the full walkthrough. Fill in the two placeholders
+# below with what those commands print out.
+
+tunnel: REPLACE_WITH_TUNNEL_ID
+credentials-file: REPLACE_WITH_PATH_TO_CREDENTIALS_JSON  # printed by `tunnel create`, usually ~/.cloudflared/<tunnel-id>.json
+
+ingress:
+  - hostname: netatlas.yourdomain.com
+    service: http://localhost:8080
+  - service: http_status:404

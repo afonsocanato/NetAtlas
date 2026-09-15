@@ -14,6 +14,12 @@ venv/
 .env
 .env.local
 
+# Deploy
+deploy/caddy
+deploy/cloudflared
+deploy/*.json
+deploy/cloudflared-config.local.yml
+
 # OS
 .DS_Store
 

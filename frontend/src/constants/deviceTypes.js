@@ -13,7 +13,7 @@ export const TYPE_COLOR_VAR = {
 export const TYPE_COLOR_HEX = {
   router: '#f59e0b',
   computer: '#38bdf8',
-  phone: '#a78bfa',
+  phone: '#2dd4bf',
   tv: '#f472b6',
   iot: '#34d399',
   unknown: '#94a3b8',

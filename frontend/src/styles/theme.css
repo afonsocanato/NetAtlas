@@ -6,7 +6,7 @@
 
   --ns-router: #f59e0b;
   --ns-computer: #38bdf8;
-  --ns-phone: #a78bfa;
+  --ns-phone: #2dd4bf;
   --ns-tv: #f472b6;
   --ns-iot: #34d399;
   --ns-unknown: #94a3b8;
@@ -22,8 +22,8 @@
   --ns-muted: #8b93a7;
   --ns-border: rgba(255, 255, 255, 0.08);
   --ns-border-strong: rgba(255, 255, 255, 0.14);
-  --ns-accent: #6d6ef5;
-  --ns-accent-soft: rgba(109, 110, 245, 0.16);
+  --ns-accent: #0090ff;
+  --ns-accent-soft: rgba(0, 144, 255, 0.16);
   --ns-accent-text: #ffffff;
   --ns-edge: rgba(255, 255, 255, 0.14);
   --ns-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 28px -12px rgba(0, 0, 0, 0.6);
@@ -38,8 +38,8 @@
   --ns-muted: #6b7280;
   --ns-border: rgba(15, 23, 42, 0.08);
   --ns-border-strong: rgba(15, 23, 42, 0.14);
-  --ns-accent: #5457e6;
-  --ns-accent-soft: rgba(84, 87, 230, 0.1);
+  --ns-accent: #0072d9;
+  --ns-accent-soft: rgba(0, 114, 217, 0.1);
   --ns-accent-text: #ffffff;
   --ns-edge: rgba(15, 23, 42, 0.12);
   --ns-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 24px -12px rgba(15, 23, 42, 0.16);

@@ -5,7 +5,22 @@ import { initSecrets } from './security/secrets.js';
 import { config } from './config/index.js';
 import { logger } from './utils/logger.js';
 
-await initSecrets();
+// initSecrets() makes several Supabase calls at boot; transient network/API
+// hiccups there shouldn't take the whole process down on a long-running
+// deploy, so retry a few times with backoff before giving up for real.
+async function initSecretsWithRetry(attempts = 5, delayMs = 2000) {
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await initSecrets();
+    } catch (err) {
+      if (attempt === attempts) throw err;
+      logger.error(`initSecrets() failed (attempt ${attempt}/${attempts}), retrying in ${delayMs}ms: ${err.message}`);
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+}
+
+await initSecretsWithRetry();
 
 const server = http.createServer(app);
 initSockets(server);

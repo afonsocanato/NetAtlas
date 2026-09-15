@@ -1,0 +1,33 @@
+# NetAtlas — local reverse proxy, sitting behind a Cloudflare Tunnel.
+# Run with: ./deploy/caddy run --config deploy/Caddyfile --adapter caddyfile
+# (from the repo root, or adjust the file_server root path below).
+#
+# Listens on plain HTTP on a local-only port — no certificate needed here,
+# since Cloudflare's edge terminates HTTPS for netatlas.yourdomain.com and
+# the tunnel forwards to this port over your machine's loopback interface.
+# Routes everything under one origin so the frontend can call /api and the
+# socket without CORS.
+
+:8080 {
+	handle /api/* {
+		reverse_proxy localhost:4000
+	}
+	handle /socket.io/* {
+		reverse_proxy localhost:4000
+	}
+	handle /assets/* {
+		root * frontend/dist
+		# Vite content-hashes these filenames, so a long cache is always safe —
+		# a new build gets new filenames, never a stale one under the same URL.
+		header Cache-Control "public, max-age=31536000, immutable"
+		file_server
+	}
+	handle {
+		root * frontend/dist
+		# index.html itself must never be cached — it's what points the
+		# browser at the current hashed asset filenames after each deploy.
+		header Cache-Control "no-cache"
+		try_files {path} /index.html
+		file_server
+	}
+}

@@ -1,10 +1,12 @@
 import { deviceModel } from '../models/deviceModel.js';
+import { networksModel } from '../models/networksModel.js';
 import { config } from '../config/index.js';
 import { emitDeviceNew, emitDeviceUpdated, emitDeviceOffline, emitScanComplete } from '../sockets/index.js';
 
 export const deviceService = {
-  async ingestReport({ network, devices }) {
+  async ingestReport({ network, devices }, reporterIp) {
     const networkId = network?.id ?? 'default';
+    await networksModel.recordReport(networkId, reporterIp);
     const seenIds = [];
     let created = 0;
     let updated = 0;
@@ -39,7 +41,7 @@ export const deviceService = {
     }
 
     await this.reconcileOffline(networkId, seenIds);
-    emitScanComplete({ scannedAt: new Date().toISOString(), deviceCount: seenIds.length });
+    emitScanComplete(networkId, { scannedAt: new Date().toISOString(), deviceCount: seenIds.length });
 
     return { received: devices.length, new: created, updated };
   },

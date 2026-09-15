@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Topbar } from './components/layout/Topbar.jsx';
 import { Sidebar } from './components/layout/Sidebar.jsx';
 import { NetworkGraph } from './components/graph/NetworkGraph.jsx';
@@ -28,10 +28,21 @@ function Dashboard() {
   const [selectedId, setSelectedId] = useState(null);
   const [summary, setSummary] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const detailsRef = useRef(null);
 
   useEffect(() => {
     api.getSummary().then(setSummary).catch(() => {});
   }, [devices]);
+
+  // On the stacked mobile layout, the details panel lands below the graph —
+  // and a swipe starting on the graph pans/zooms it (Cytoscape) instead of
+  // scrolling the page, so picking a device could leave the panel
+  // unreachable. Scroll it into view automatically whenever one is picked.
+  useEffect(() => {
+    if (selectedId != null && window.innerWidth <= 860) {
+      detailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [selectedId]);
 
   const filtered = useMemo(() => {
     return devices.filter((d) => {
@@ -95,6 +106,7 @@ function Dashboard() {
         {selectedDevice && (
           <DeviceDetails
             key={selectedDevice.id}
+            ref={detailsRef}
             device={selectedDevice}
             onClose={() => setSelectedId(null)}
             onUpdated={() => {}}

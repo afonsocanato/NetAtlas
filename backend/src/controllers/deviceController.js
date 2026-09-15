@@ -5,7 +5,7 @@ import { ApiError } from '../middleware/errorHandler.js';
 export const deviceController = {
   async list(req, res) {
     const { status, vendor, deviceType, q } = req.query;
-    res.json(await deviceModel.findAll({ status, vendor, deviceType, q }));
+    res.json(await deviceModel.findAll({ status, vendor, deviceType, q, networkId: req.networkId }));
   },
 
   async get(req, res, next) {
@@ -34,6 +34,6 @@ export const deviceController = {
   },
 
   async summary(req, res) {
-    res.json(await deviceModel.summary());
+    res.json(await deviceModel.summary(req.networkId));
   },
 };
