@@ -1,0 +1,32 @@
+# One-command demo: backend + frontend, backend pre-seeded with mock devices
+# so the dashboard is explorable without running the real agent.
+# The discovery agent is intentionally NOT containerized here — it needs
+# direct access to the host's network stack (ARP table, real LAN), which
+# containers don't provide by default. Run it on the host: see agent/README.md.
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "4000:4000"
+    environment:
+      PORT: 4000
+      DB_PATH: /app/data/netatlas.sqlite
+      AGENT_API_KEY: change-me-to-a-random-secret
+      OFFLINE_AFTER_MISSED_REPORTS: 2
+      CORS_ORIGIN: http://localhost:5173
+    volumes:
+      - netatlas-data:/app/data
+    command: sh -c "node src/db/seed.js && node src/server.js"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: http://localhost:4000
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  netatlas-data:

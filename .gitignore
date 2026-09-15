@@ -17,7 +17,9 @@ venv/
 # DB
 *.sqlite
 *.sqlite3
-backend/data/*.db
+*.sqlite-shm
+*.sqlite-wal
+backend/data/
 
 # OS
 .DS_Store

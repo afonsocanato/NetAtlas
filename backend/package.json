@@ -6,7 +6,9 @@
   "main": "src/server.js",
   "scripts": {
     "dev": "node --watch src/server.js",
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "test": "node --test test/*.test.js",
+    "seed": "node src/db/seed.js"
   },
   "dependencies": {
     "better-sqlite3": "^11.3.0",

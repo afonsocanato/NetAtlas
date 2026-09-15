@@ -66,6 +66,30 @@ NETATLAS_API_KEY=change-me-to-a-random-secret python -m netatlas_agent.main
 
 Open `http://localhost:5173` — devices discovered by the agent appear on the graph as they're reported, live.
 
+### No agent handy? Seed some demo data
+
+```bash
+cd backend && npm run seed
+```
+
+Populates the database with ~10 plausible fake devices (router, laptop, phones, TV, IoT, one offline) so the dashboard has something to show immediately.
+
+### Or run it all with Docker Compose
+
+```bash
+docker compose up --build
+```
+
+Builds and starts the backend (pre-seeded with the same mock data) and the frontend, wired together — `http://localhost:5173` is ready with no manual setup. The discovery agent is intentionally not containerized (it needs direct access to the host's ARP table/LAN); run it on the host as in step 3 above.
+
+## Tests
+
+```bash
+cd backend && npm test
+```
+
+Backend unit tests run on Node's built-in test runner against an isolated in-memory database — see [backend/README.md](backend/README.md#tests).
+
 ## Project structure
 
 ```
@@ -76,17 +100,21 @@ NetAtlas/
 │       ├── client.py    # reports batches to the backend
 │       └── main.py      # discovery loop entrypoint
 ├── backend/    # Node.js/Express API, SQLite storage, Socket.IO real-time layer
-│   └── src/
-│       ├── db/          # connection + migrations
-│       ├── models/       # device queries
-│       ├── services/     # ingestion + online/offline reconciliation
-│       ├── controllers/, routes/, middleware/, sockets/
+│   ├── src/
+│   │   ├── db/          # connection + migrations + seed.js (mock data)
+│   │   ├── models/       # device queries
+│   │   ├── services/     # ingestion + online/offline reconciliation
+│   │   ├── controllers/, routes/, middleware/, sockets/
+│   ├── test/             # node:test unit tests
+│   └── Dockerfile
 ├── frontend/   # React + Vite dashboard, Cytoscape.js graph
-│   └── src/
-│       ├── components/graph/    # NetworkGraph.jsx
-│       ├── components/devices/  # DeviceDetails.jsx
-│       ├── components/layout/   # Topbar.jsx, Sidebar.jsx
-│       ├── hooks/, api/, context/
+│   ├── src/
+│   │   ├── components/graph/    # NetworkGraph.jsx
+│   │   ├── components/devices/  # DeviceDetails.jsx
+│   │   ├── components/layout/   # Topbar.jsx, Sidebar.jsx
+│   │   ├── hooks/, api/, context/
+│   └── Dockerfile
+├── docker-compose.yml  # one-command backend + frontend demo
 └── docs/       # architecture, API contract, DB schema, limitations, roadmap
 ```
 
@@ -104,7 +132,7 @@ Full list with defaults in each component's own README ([backend](backend/README
 
 ## Status & roadmap
 
-Early-stage MVP — discovery, storage, real-time sync and the graph dashboard are working end-to-end. Not yet built: automated tests, Docker Compose, a demo/mock-data mode, presence history, new-device alerts, multi-network support, export, PWA, and authentication. See [docs/ROADMAP.md](docs/ROADMAP.md) for the phased plan.
+Early-stage MVP — discovery, storage, real-time sync and the graph dashboard are working end-to-end, with backend tests, a mock-data seed script and Docker Compose in place. Not yet built: presence history, new-device alerts, multi-network support, export, PWA, and authentication. See [docs/ROADMAP.md](docs/ROADMAP.md) for the phased plan.
 
 ## License
 
