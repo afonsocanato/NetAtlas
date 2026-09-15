@@ -1,0 +1,19 @@
+{
+  "_comment": "Small starter OUI prefix -> vendor table (first 3 octets of MAC, uppercase, colon-separated). Replace/extend with the full IEEE OUI list (https://standards-oui.ieee.org/oui/oui.txt) for production use — download it once and keep it local, never queried at runtime.",
+  "AC:DE:48": "Apple, Inc.",
+  "3C:22:FB": "Apple, Inc.",
+  "F0:18:98": "Apple, Inc.",
+  "00:1A:11": "Google, Inc.",
+  "F4:F5:D8": "Google, Inc.",
+  "B8:27:EB": "Raspberry Pi Foundation",
+  "DC:A6:32": "Raspberry Pi Foundation",
+  "00:1B:63": "Samsung Electronics",
+  "5C:E0:C5": "Samsung Electronics",
+  "A4:56:02": "Amazon Technologies Inc.",
+  "18:74:2E": "TP-Link Technologies",
+  "50:C7:BF": "TP-Link Technologies",
+  "EC:08:6B": "Espressif Inc. (generic IoT/ESP chip)",
+  "24:6F:28": "Espressif Inc. (generic IoT/ESP chip)",
+  "00:50:56": "VMware, Inc.",
+  "08:00:27": "Oracle VirtualBox"
+}

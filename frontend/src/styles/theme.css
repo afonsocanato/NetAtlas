@@ -1,0 +1,137 @@
+:root[data-theme='dark'] {
+  --ns-bg: #0f172a;
+  --ns-panel: #1e293b;
+  --ns-text: #e2e8f0;
+  --ns-muted: #94a3b8;
+  --ns-edge: #334155;
+  --ns-border: #334155;
+}
+
+:root[data-theme='light'] {
+  --ns-bg: #f8fafc;
+  --ns-panel: #ffffff;
+  --ns-text: #0f172a;
+  --ns-muted: #475569;
+  --ns-edge: #cbd5e1;
+  --ns-border: #e2e8f0;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--ns-bg);
+  color: var(--ns-text);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.ns-app {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  height: 100vh;
+}
+
+.ns-topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ns-border);
+  background: var(--ns-panel);
+}
+
+.ns-topbar h1 {
+  font-size: 18px;
+  margin: 0 12px 0 0;
+}
+
+.ns-search {
+  flex: 1;
+  min-width: 160px;
+}
+
+.ns-main {
+  display: grid;
+  grid-template-columns: 220px 1fr auto;
+  min-height: 0;
+}
+
+.ns-sidebar {
+  padding: 16px;
+  border-right: 1px solid var(--ns-border);
+  background: var(--ns-panel);
+  overflow-y: auto;
+}
+
+.ns-stats {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+}
+
+.ns-stats li {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  color: var(--ns-muted);
+  text-transform: capitalize;
+}
+
+.ns-graph {
+  width: 100%;
+  height: 100%;
+}
+
+.ns-details {
+  width: 280px;
+  padding: 16px;
+  border-left: 1px solid var(--ns-border);
+  background: var(--ns-panel);
+  position: relative;
+  overflow-y: auto;
+}
+
+.ns-details__close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.ns-details dl {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 4px 8px;
+  font-size: 13px;
+}
+
+.ns-details dt {
+  color: var(--ns-muted);
+}
+
+.ns-details label {
+  display: block;
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--ns-muted);
+}
+
+.ns-details input,
+.ns-details select {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.ns-status--online { color: #22c55e; }
+.ns-status--offline { color: #ef4444; }
+
+input, select, button {
+  background: var(--ns-bg);
+  color: var(--ns-text);
+  border: 1px solid var(--ns-border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 13px;
+}
+
+button { cursor: pointer; }

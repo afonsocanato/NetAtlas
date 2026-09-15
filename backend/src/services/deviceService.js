@@ -1,0 +1,59 @@
+import { deviceModel } from '../models/deviceModel.js';
+import { config } from '../config/index.js';
+import { emitDeviceNew, emitDeviceUpdated, emitDeviceOffline, emitScanComplete } from '../sockets/index.js';
+
+export const deviceService = {
+  ingestReport({ network, devices }) {
+    const networkId = network?.id ?? 'default';
+    const seenIds = [];
+    let created = 0;
+    let updated = 0;
+
+    for (const d of devices) {
+      const mac = d.mac ? d.mac.toUpperCase() : null;
+      const existing = deviceModel.findByMacOrIp({ networkId, mac, ip: d.ip });
+
+      if (!existing) {
+        const device = deviceModel.create({
+          networkId,
+          mac,
+          ip: d.ip,
+          hostname: d.hostname,
+          vendor: d.vendor,
+          isRouter: Boolean(d.is_router ?? d.isRouter),
+          deviceType: d.is_router ?? d.isRouter ? 'router' : 'unknown',
+        });
+        seenIds.push(device.id);
+        created += 1;
+        emitDeviceNew(device);
+      } else {
+        const device = deviceModel.markSeen(existing.id, {
+          ip: d.ip,
+          hostname: d.hostname,
+          vendor: d.vendor,
+        });
+        seenIds.push(device.id);
+        updated += 1;
+        emitDeviceUpdated(device);
+      }
+    }
+
+    this.reconcileOffline(networkId, seenIds);
+    emitScanComplete({ scannedAt: new Date().toISOString(), deviceCount: seenIds.length });
+
+    return { received: devices.length, new: created, updated };
+  },
+
+  // Devices not present in this report get their missed-report counter bumped;
+  // once it crosses the configured threshold they flip to offline.
+  reconcileOffline(networkId, seenIds) {
+    const missingIds = deviceModel.idsNotIn(networkId, seenIds);
+    for (const id of missingIds) {
+      const missedReports = deviceModel.markMissing(id);
+      if (missedReports >= config.offlineAfterMissedReports) {
+        const device = deviceModel.markOffline(id);
+        emitDeviceOffline(device);
+      }
+    }
+  },
+};
