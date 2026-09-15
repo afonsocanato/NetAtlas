@@ -3,7 +3,6 @@ import { Topbar } from './components/layout/Topbar.jsx';
 import { Sidebar } from './components/layout/Sidebar.jsx';
 import { NetworkGraph } from './components/graph/NetworkGraph.jsx';
 import { DeviceDetails } from './components/devices/DeviceDetails.jsx';
-import { SettingsModal } from './components/settings/SettingsModal.jsx';
 import { LoginPage } from './components/auth/LoginPage.jsx';
 import { useDevices } from './hooks/useDevices.js';
 import { useAuth } from './context/AuthContext.jsx';
@@ -27,7 +26,6 @@ function Dashboard() {
   const [typeFilter, setTypeFilter] = useState('');
   const [selectedId, setSelectedId] = useState(null);
   const [summary, setSummary] = useState(null);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const detailsRef = useRef(null);
 
   useEffect(() => {
@@ -68,7 +66,6 @@ function Dashboard() {
         onStatusFilterChange={setStatusFilter}
         typeFilter={typeFilter}
         onTypeFilterChange={setTypeFilter}
-        onOpenSettings={() => setSettingsOpen(true)}
       />
       <div className="ns-main">
         <Sidebar summary={summary} />
@@ -113,8 +110,6 @@ function Dashboard() {
           />
         )}
       </div>
-
-      {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
     </div>
   );
 }
