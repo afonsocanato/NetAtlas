@@ -1,5 +1,5 @@
 // Hostnames/mDNS names arrive however the device (or router/DHCP table)
-// reports them — often all lowercase ("iphone", "device", "mac").
+// reports them — often all lowercase ("iphone", "johnsmith-pc", "mac").
 // Title-cases each word/segment for display, without touching the
 // underlying data (search, the raw hostname field, etc. use the original
 // string). A small dictionary restores the "real" capitalization for common
